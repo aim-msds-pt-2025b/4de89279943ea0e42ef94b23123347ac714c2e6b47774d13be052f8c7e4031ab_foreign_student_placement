@@ -1,0 +1,21 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+
+# Virtual env
+uv/
+.venv/
+env/
+
+# VSCode
+.vscode/
+
+# Data, models, reports
+/data/
+/models/
+/reports/
+
+# Lock files
+poetry.lock
+requirements.txt

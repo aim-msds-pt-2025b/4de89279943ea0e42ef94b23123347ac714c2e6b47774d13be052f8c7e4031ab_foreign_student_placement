@@ -1,0 +1,18 @@
+repos:
+  - repo: https://github.com/psf/black
+    rev: 24.10.0
+    hooks:
+      - id: black
+        args: [--line-length=88]
+        # NOTE: no change here—black will skip non‐py by default
+
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.12.2
+    hooks:
+      - id: ruff-check
+        args: [--fix]
+        # only run on .py files
+        files: \.py$
+      - id: ruff-format
+        # only run on .py files
+        files: \.py$
