@@ -1,5 +1,3 @@
-# src/data_preprocessing.py
-
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -7,17 +5,17 @@ from sklearn.preprocessing import StandardScaler
 
 def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     """
-    1) Load CSV
+    1) Load CSV (with keep_default_na=False so “None” stays a string)
     2) Drop identifier/leakage columns
     3) Map target to binary
     4) Drop rows with missing core columns
-    5) Split into train/test (float or int test_size)
+    5) Split into train/test
     6) Scale numeric features
     """
-    # 1) load
-    df = pd.read_csv(path)
+    # 1) Load, disabling default NA inference so “None” isn’t turned into NaN
+    df = pd.read_csv(path, keep_default_na=False)
 
-    # 2) drop leakage/ID columns (ignore if missing)
+    # 2) Drop leakage/ID columns (ignore if missing)
     drop_cols = [
         "student_id",
         "destination_city",
@@ -29,10 +27,10 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     ]
     df = df.drop(columns=drop_cols, errors="ignore")
 
-    # 3) map target to 0/1
+    # 3) Map target to 0/1
     df["placement_status"] = df["placement_status"].map({"Placed": 1, "Not Placed": 0})
 
-    # 4) drop any rows missing our “core” fields
+    # 4) Drop any rows missing our “core” fields
     core = [
         "placement_status",
         "gpa_or_score",
@@ -50,34 +48,14 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     ]
     df = df.dropna(subset=core)
 
-    # 5) split into X / y
+    # 5) Split into X/y and then train vs. test
     X = df.drop(columns="placement_status")
     y = df["placement_status"]
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=test_size, random_state=random_state, stratify=y
+    )
 
-    n_samples = len(X)
-    # if they asked for an integer, do a manual N‐row test split
-    if isinstance(test_size, int):
-        if not (0 < test_size < n_samples):
-            raise ValueError(
-                f"test_size={test_size} must be >0 and < number of samples ({n_samples})"
-            )
-        # sample exactly N rows for test
-        X_test = X.sample(n=test_size, random_state=random_state)
-        y_test = y.loc[X_test.index]
-        # the rest is train
-        X_train = X.drop(index=X_test.index)
-        y_train = y.drop(index=X_test.index)
-    else:
-        # float‐based split, stratify to keep label balance
-        X_train, X_test, y_train, y_test = train_test_split(
-            X,
-            y,
-            test_size=test_size,
-            random_state=random_state,
-            stratify=y,
-        )
-
-    # 6) scale numeric features
+    # 6) Scale numeric columns
     num_cols = ["gpa_or_score", "test_score", "year_of_enrollment", "graduation_year"]
     scaler = StandardScaler().fit(X_train[num_cols])
     X_train[num_cols] = scaler.transform(X_train[num_cols])
