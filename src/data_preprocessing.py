@@ -17,7 +17,7 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     # 1) load
     df = pd.read_csv(path)
 
-    # 2) drop leakage/ID columns
+    # 2) drop leakage/ID columns (ignore if missing)
     drop_cols = [
         "student_id",
         "destination_city",
@@ -29,13 +29,8 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     ]
     df = df.drop(columns=drop_cols, errors="ignore")
 
-    # 3) map target
-    df["placement_status"] = df["placement_status"].map(
-        {
-            "Placed": 1,
-            "Not Placed": 0,
-        }
-    )
+    # 3) map target to 0/1
+    df["placement_status"] = df["placement_status"].map({"Placed": 1, "Not Placed": 0})
 
     # 4) drop any rows missing our “core” fields
     core = [
@@ -55,20 +50,25 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     ]
     df = df.dropna(subset=core)
 
-    # 5) split into X/y
+    # 5) split into X / y
     X = df.drop(columns="placement_status")
     y = df["placement_status"]
 
-    # if they asked for an integer N, do a manual N‐row test split
+    n_samples = len(X)
+    # if they asked for an integer, do a manual N‐row test split
     if isinstance(test_size, int):
-        # sample exactly N rows for the test set
+        if not (0 < test_size < n_samples):
+            raise ValueError(
+                f"test_size={test_size} must be >0 and < number of samples ({n_samples})"
+            )
+        # sample exactly N rows for test
         X_test = X.sample(n=test_size, random_state=random_state)
         y_test = y.loc[X_test.index]
-        # the rest is training
+        # the rest is train
         X_train = X.drop(index=X_test.index)
         y_train = y.drop(index=X_test.index)
     else:
-        # float‐based split, stratify to keep the label balance
+        # float‐based split, stratify to keep label balance
         X_train, X_test, y_train, y_test = train_test_split(
             X,
             y,
