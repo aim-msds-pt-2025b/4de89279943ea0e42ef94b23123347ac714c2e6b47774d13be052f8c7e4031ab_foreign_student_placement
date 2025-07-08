@@ -1,3 +1,5 @@
+# src/data_preprocessing.py
+
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
@@ -14,6 +16,7 @@ def preprocess_data(path: str, test_size: float = 0.2, random_state: int = 42):
     """
     df = pd.read_csv(path)
 
+    # 2) Drop leakage columns
     drop_cols = [
         "student_id",
         "destination_city",
@@ -23,10 +26,12 @@ def preprocess_data(path: str, test_size: float = 0.2, random_state: int = 42):
         "placement_company",
         "starting_salary_usd",
     ]
-    df = df.drop(drop_cols, axis=1)
+    df = df.drop(columns=drop_cols, errors="ignore")
 
+    # 3) Map target to 0/1
     df["placement_status"] = df["placement_status"].map({"Placed": 1, "Not Placed": 0})
 
+    # 4) Drop any rows missing our “core” fields
     core = [
         "placement_status",
         "gpa_or_score",
@@ -44,12 +49,17 @@ def preprocess_data(path: str, test_size: float = 0.2, random_state: int = 42):
     ]
     df = df.dropna(subset=core)
 
-    X = df.drop("placement_status", axis=1)
+    # 5) Split into train/test (integer or float test_size both supported)
+    X = df.drop(columns="placement_status")
     y = df["placement_status"]
     X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, stratify=y, random_state=random_state
+        X,
+        y,
+        test_size=test_size,
+        random_state=random_state,
     )
 
+    # 6) Scale the numeric columns
     num_cols = ["gpa_or_score", "test_score", "year_of_enrollment", "graduation_year"]
     scaler = StandardScaler().fit(X_train[num_cols])
     X_train[num_cols] = scaler.transform(X_train[num_cols])
