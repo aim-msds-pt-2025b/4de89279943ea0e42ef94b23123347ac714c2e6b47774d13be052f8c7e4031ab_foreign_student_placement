@@ -128,9 +128,15 @@ repos:
 
 ---
 
+
 ## Reflection
 
-One challenge was that the raw CSV used the string `"None"` for missing visa fields, which pandas’ default `read_csv` treats as `NaN`. Our tiny pytest datasets then dropped **all** rows in `dropna()`. We fixed this by passing `keep_default_na=False` and/or explicitly mapping `"None"` to a valid category, ensuring only truly missing data is removed.
+When I first started this project, setting up a clean development environment and code-quality tooling proved more challenging than I expected. I lost my `.pre-commit-config.yaml` file at one point and had to rebuild it from scratch—reinstalling Black and Ruff, re-running `pre-commit install`, and even rewriting parts of my Git history to restore the hooks. I also ran into Git rebase conflicts and “non-fast-forward” errors when pushing to the remote repository, which forced me to learn how to safely abort or continue a rebase without losing work.
+
+On the data side, my simple pytest fixtures kept collapsing the entire mini-datasets because the string `"None"` in some columns was automatically interpreted as a missing value (`NaN`). That caused every toy CSV I created to be dropped entirely by our `dropna()` step. To address this, I explored Pandas’ CSV-reading options (`keep_default_na=False`) and explicitly mapped `"None"` to a valid category so that only truly missing values would be removed. I also encountered scikit-learn errors when splitting very small datasets—using an integer `test_size` versus a fractional `test_size` required special handling to prevent empty train or test splits.
+
+With the data loading and testing pipeline finally stable, I was able to focus on feature engineering—creating interaction and ratio features, clustering, bucketization, and count-encoding—and then on model training and hyperparameter tuning. I compared five algorithms—Random Forest, Gradient Boosting, Logistic Regression, SVM, and KNN—and combined them in a soft-voting ensemble to boost overall performance. I then added a dedicated Visualization module so that all exploratory plots and model performance figures can be generated automatically. Despite the many bumps along the way—lost configs, rebasing nightmares, test failures, and convergence warnings—the end result is a fully automated, reproducible pipeline that enforces code style, validates data loading, trains and tunes models, generates plots, and saves final metrics. This journey reinforced for me the value of automation, thorough testing, and clear error handling at every stage of a machine learning project.
+
 
 ---
 
