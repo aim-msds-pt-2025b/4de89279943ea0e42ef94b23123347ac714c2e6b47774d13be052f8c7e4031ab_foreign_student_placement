@@ -40,23 +40,30 @@ source uv/bin/activate      # macOS/Linux
 uv\Scripts\activate         # Windows
 ```
 
-### 3. Install runtime requirements
+### 3. Install dependencies using `uv` and `pyproject.toml`
+
+```bash
+uv pip install -e .[dev]
+```
+
+> 💡 If `uv` is not installed, install it first via:
+>
+> ```bash
+> pip install uv
+> ```
+
+### 4. (Optional) Install from `requirements.txt` (backup method)
+
+If you prefer or need to install from a frozen requirements file:
 
 ```bash
 pip install -r requirements.txt
 ```
 
-### 4. Install dev tools & hooks
+### 5. Install pre-commit hooks (for formatting and linting)
 
 ```bash
-pip install pre-commit black ruff pytest
 pre-commit install
-```
-
-### 5. Regenerate requirements *(after adding new deps)*
-
-```bash
-pip freeze > requirements.txt
 ```
 
 ---
@@ -73,8 +80,8 @@ pip freeze > requirements.txt
 │   └── figures/                 # PNGs produced by visualization.py
 ├── tests/                       # pytest unit tests
 ├── .pre-commit-config.yaml      # Black + Ruff hooks
-├── requirements.txt             # pinned runtime deps
-├── pyproject.toml               # project metadata & dev extras (pytest, etc.)
+├── requirements.txt             # backup for runtime deps
+├── pyproject.toml               # project metadata & dependency config
 └── README.md
 ```
 
