@@ -10,3 +10,15 @@ env/
 
 # VSCode
 .vscode/
+
+
+# Data, models, reports
+/data/
+/models/
+/reports/
+
+
+# Lock files
+poetry.lock
+uv.lock
+requirements.txt
