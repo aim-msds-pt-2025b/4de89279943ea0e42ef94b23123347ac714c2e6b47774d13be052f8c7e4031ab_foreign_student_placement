@@ -1,0 +1,34 @@
+[2025-07-27T06:14:32.896+0000] {local_task_job_runner.py:120} INFO - ::group::Pre task execution logs
+[2025-07-27T06:14:32.933+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=non-requeueable deps ti=<TaskInstance: hw2_ml_pipeline.run_full_pipeline manual__2025-07-27T06:14:32.460099+00:00 [queued]>
+[2025-07-27T06:14:32.941+0000] {taskinstance.py:2076} INFO - Dependencies all met for dep_context=requeueable deps ti=<TaskInstance: hw2_ml_pipeline.run_full_pipeline manual__2025-07-27T06:14:32.460099+00:00 [queued]>
+[2025-07-27T06:14:32.942+0000] {taskinstance.py:2306} INFO - Starting attempt 1 of 1
+[2025-07-27T06:14:32.953+0000] {taskinstance.py:2330} INFO - Executing <Task(DockerOperator): run_full_pipeline> on 2025-07-27 06:14:32.460099+00:00
+[2025-07-27T06:14:32.963+0000] {logging_mixin.py:188} WARNING - /home/***/.local/lib/python3.12/site-packages/***/task/task_runner/standard_task_runner.py:62 DeprecationWarning: This process (pid=183) is multi-threaded, use of fork() may lead to deadlocks in the child.
+[2025-07-27T06:14:32.964+0000] {standard_task_runner.py:64} INFO - Started process 184 to run task
+[2025-07-27T06:14:32.963+0000] {standard_task_runner.py:90} INFO - Running: ['***', 'tasks', 'run', 'hw2_ml_pipeline', 'run_full_pipeline', 'manual__2025-07-27T06:14:32.460099+00:00', '--job-id', '13', '--raw', '--subdir', 'DAGS_FOLDER/ml_pipeline_dag.py', '--cfg-path', '/tmp/tmpck95hwhr']
+[2025-07-27T06:14:32.965+0000] {standard_task_runner.py:91} INFO - Job 13: Subtask run_full_pipeline
+[2025-07-27T06:14:32.985+0000] {logging_mixin.py:188} WARNING - /home/***/.local/lib/python3.12/site-packages/***/settings.py:195 DeprecationWarning: The sql_alchemy_conn option in [core] has been moved to the sql_alchemy_conn option in [database] - the old setting has been used, but please update your config.
+[2025-07-27T06:14:33.036+0000] {task_command.py:426} INFO - Running <TaskInstance: hw2_ml_pipeline.run_full_pipeline manual__2025-07-27T06:14:32.460099+00:00 [running]> on host 5b02c9212478
+[2025-07-27T06:14:33.126+0000] {taskinstance.py:2648} INFO - Exporting env vars: AIRFLOW_CTX_DAG_OWNER='***' AIRFLOW_CTX_DAG_ID='hw2_ml_pipeline' AIRFLOW_CTX_TASK_ID='run_full_pipeline' AIRFLOW_CTX_EXECUTION_DATE='2025-07-27T06:14:32.460099+00:00' AIRFLOW_CTX_TRY_NUMBER='1' AIRFLOW_CTX_DAG_RUN_ID='manual__2025-07-27T06:14:32.460099+00:00'
+[2025-07-27T06:14:33.127+0000] {taskinstance.py:430} INFO - ::endgroup::
+[2025-07-27T06:14:33.206+0000] {docker.py:367} INFO - Starting docker container from image 4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab-ml-pipeline
+[2025-07-27T06:14:33.213+0000] {docker.py:375} WARNING - Using remote engine or docker-in-docker and mounting temporary volume from host is not supported. Falling back to `mount_tmp_dir=False` mode. You can set `mount_tmp_dir` parameter to False to disable mounting and remove the warning
+[2025-07-27T06:15:55.842+0000] {docker.py:438} INFO - accuracy  precision    recall  f1_score   roc_auc
+[2025-07-27T06:15:55.855+0000] {docker.py:438} INFO - model                                                                
+[2025-07-27T06:15:55.856+0000] {docker.py:438} INFO - randomforest           0.481   0.483622  0.500000  0.491675  0.492280
+[2025-07-27T06:15:55.856+0000] {docker.py:438} INFO - gradientboosting       0.491   0.492958  0.488048  0.490490  0.482606
+[2025-07-27T06:15:55.857+0000] {docker.py:438} INFO - logisticregression     0.507   0.504918  0.920319  0.652082  0.498910
+[2025-07-27T06:15:55.857+0000] {docker.py:438} INFO - knn                    0.449   0.455535  0.500000  0.476733  0.432261
+[2025-07-27T06:15:55.858+0000] {docker.py:438} INFO - ensemble               0.455   0.461538  0.513944  0.486334  0.435911
+[2025-07-27T06:15:55.858+0000] {docker.py:438} INFO - 
+[2025-07-27T06:15:55.858+0000] {docker.py:438} INFO - Best model: logisticregression
+[2025-07-27T06:15:55.859+0000] {docker.py:438} INFO - Confusion matrix:
+[2025-07-27T06:15:55.859+0000] {docker.py:438} INFO -  [[ 45 453]
+[2025-07-27T06:15:55.859+0000] {docker.py:438} INFO -  [ 40 462]]
+[2025-07-27T06:15:55.860+0000] {docker.py:438} INFO - 
+[2025-07-27T06:15:55.860+0000] {docker.py:438} INFO - ✅ All figures exported to reports/figures/
+[2025-07-27T06:15:57.166+0000] {taskinstance.py:441} INFO - ::group::Post task execution logs
+[2025-07-27T06:15:57.202+0000] {taskinstance.py:1206} INFO - Marking task as SUCCESS. dag_id=hw2_ml_pipeline, task_id=run_full_pipeline, run_id=manual__2025-07-27T06:14:32.460099+00:00, execution_date=20250727T061432, start_date=20250727T061432, end_date=20250727T061557
+[2025-07-27T06:15:57.264+0000] {local_task_job_runner.py:243} INFO - Task exited with return code 0
+[2025-07-27T06:15:57.284+0000] {taskinstance.py:3503} INFO - 0 downstream tasks scheduled from follow-on schedule check
+[2025-07-27T06:15:57.286+0000] {local_task_job_runner.py:222} INFO - ::endgroup::
