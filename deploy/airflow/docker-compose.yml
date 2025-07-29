@@ -10,7 +10,10 @@ services:
       - postgres-db:/var/lib/postgresql/data
 
   webserver:
-    image: apache/airflow:2.9.3
+    build:
+      context: ../..                         # repo root
+      dockerfile: deploy/airflow/Dockerfile.airflow
+    image: my-airflow-toml:latest
     depends_on:
       - postgres
     environment:
@@ -24,19 +27,13 @@ services:
       - ../../src:/opt/airflow/src
       - ../../data:/opt/airflow/data
       - ../../models:/opt/airflow/models
-      - ./requirements.txt:/requirements.txt
       - /var/run/docker.sock:/var/run/docker.sock
-    entrypoint:
-      - bash
-      - -cx
-      - |
-        pip install --no-cache-dir -r /requirements.txt
-        exec airflow webserver
+    entrypoint: ["airflow", "webserver"]
     ports:
       - "8080:8080"
 
   scheduler:
-    image: apache/airflow:2.9.3
+    image: my-airflow-toml:latest
     depends_on:
       - webserver
     environment:
@@ -50,14 +47,8 @@ services:
       - ../../src:/opt/airflow/src
       - ../../data:/opt/airflow/data
       - ../../models:/opt/airflow/models
-      - ./requirements.txt:/requirements.txt
       - /var/run/docker.sock:/var/run/docker.sock
-    entrypoint:
-      - bash
-      - -cx
-      - |
-        pip install --no-cache-dir -r /requirements.txt
-        exec airflow scheduler
+    entrypoint: ["airflow", "scheduler"]
 
 volumes:
   postgres-db:
