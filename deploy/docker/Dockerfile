@@ -1,34 +1,39 @@
 # deploy/docker/Dockerfile
 
-# ---- Stage 1: build a .venv with uv ----
+# ---- Stage 1: build a .venv with your requirements + uv ----
 FROM python:3.12-slim AS builder
 WORKDIR /app
 
-# 1) Install pip + uv
+# 1) Copy in your pinned-version requirements
+COPY requirements.txt /requirements.txt
+
+# 2) Install them with no cache
+RUN pip install --no-cache-dir -r /requirements.txt
+
+# 3) Install pip + uv (skip hadolint’s pin-and-cache rules here)
+# hadolint ignore=DL3013,DL3042
 RUN pip install --upgrade pip \
  && pip install uv
 
-# 2) Copy pyproject.toml, uv.lock, README.md so uv can resolve deps
+# 4) Copy project files for uv to resolve/transpile
 COPY pyproject.toml uv.lock README.md ./
-
-# 3) Also copy your source tree so uv can build if needed
 COPY src/ ./src
 
-# 4) Create .venv with just the runtime deps
+# 5) Create a .venv containing only your runtime deps
 RUN uv sync
 
 # ---- Stage 2: runtime only ----
 FROM python:3.12-slim
 WORKDIR /app
 
-# 5) Pull in the complete .venv
+# 6) Bring in the complete .venv
 COPY --from=builder /app/.venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 6) Copy your code, data, and models folders
+# 7) Copy code, data, and models
 COPY src/    ./src
 COPY data/   ./data
 COPY models/ ./models
 
-# 7) Run your pipeline script directly
+# 8) Default entrypoint
 ENTRYPOINT ["python", "src/run_pipeline.py"]
