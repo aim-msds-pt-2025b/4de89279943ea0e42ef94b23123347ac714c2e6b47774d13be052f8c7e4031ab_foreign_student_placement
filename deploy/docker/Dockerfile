@@ -1,39 +1,33 @@
 # deploy/docker/Dockerfile
 
-# ---- Stage 1: build a .venv with your requirements + uv ----
+# ---- Stage 1: build a .venv with all deps from pyproject.toml ----
 FROM python:3.12-slim AS builder
 WORKDIR /app
 
-# 1) Copy in your pinned-version requirements
-COPY requirements.txt /requirements.txt
+# Copy lockfile, pyproject, README, and source so uv can build
+COPY pyproject.toml uv.lock README.md ./
+COPY src/ ./src
 
-# 2) Install them with no cache
-RUN pip install --no-cache-dir -r /requirements.txt
-
-# 3) Install pip + uv (skip hadolint’s pin-and-cache rules here)
+# Install pip and uv (skip hadolint pin/cache warnings)
 # hadolint ignore=DL3013,DL3042
 RUN pip install --upgrade pip \
  && pip install uv
 
-# 4) Copy project files for uv to resolve/transpile
-COPY pyproject.toml uv.lock README.md ./
-COPY src/ ./src
+# Build the editable .venv (runtime + dev)
+RUN uv sync --dev
 
-# 5) Create a .venv containing only your runtime deps
-RUN uv sync
-
-# ---- Stage 2: runtime only ----
-FROM python:3.12-slim
+# ---- Stage 2: runtime with Airflow installed ----
+FROM apache/airflow:2.9.3
 WORKDIR /app
 
-# 6) Bring in the complete .venv
+# Bring in the complete .venv so it has your deps
 COPY --from=builder /app/.venv /opt/venv
 ENV PATH="/opt/venv/bin:$PATH"
 
-# 7) Copy code, data, and models
+# Copy your pipeline code (and any data/models if you want baked in)
 COPY src/    ./src
 COPY data/   ./data
 COPY models/ ./models
 
-# 8) Default entrypoint
-ENTRYPOINT ["python", "src/run_pipeline.py"]
+# Default entrypoint will still be the airflow binary
+# (webserver/scheduler commands come from docker-compose)
