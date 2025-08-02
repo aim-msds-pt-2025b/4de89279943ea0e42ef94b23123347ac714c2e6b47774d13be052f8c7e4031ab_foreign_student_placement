@@ -228,10 +228,11 @@ deploy/
 
 ---
 
-### Reflection
+### Reflection  
+On my home computer Docker would simply refuse to start until I went into the BIOS and enabled hardware virtualization—an extra step I never needed on my work laptop or personal laptop. This BIOS tweak taught me that, beyond code and containers, underlying hardware settings can make or break your MLOps setup, and now I always check that virtualization flag first which I found in the task manager.
 
-**Challenge:** Getting host-mounted code & data volumes to work with Airflow’s Python path and DockerOperator mounts.
+I also began by wrapping the entire ML pipeline in one big `DockerOperator` task, but found the Airflow UI much more insightful when each stage—preprocessing, feature engineering, model training, tuning, evaluation, plotting—was its own `PythonOperator`. Splitting tasks this way made dependencies explicit, improved retry granularity, and gave me a clearer picture of where things might fail or need tuning.
 
-**Resolution:** Standardized on host paths under `/app/*` for Airflow tasks and used simple `requirements.txt` installs inside the custom image, avoiding editable installs that conflicted with volume mounts.
+Juggling these challenges across three different machines and adapting my DAG design deepened my appreciation for immutable, reproducible environments and for Airflow’s orchestration power. Wrestling with hardware settings, volume mounts, and operator choices was frustrating at times, but now I’m confident I can deploy and debug a robust MLOps workflow anywhere.  
 
 ---
