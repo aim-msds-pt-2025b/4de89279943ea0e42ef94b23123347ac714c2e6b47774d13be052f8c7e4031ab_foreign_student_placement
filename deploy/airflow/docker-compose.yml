@@ -1,0 +1,54 @@
+---
+services:
+  postgres:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - postgres-db:/var/lib/postgresql/data
+
+  webserver:
+    build:
+      context: ../..                         # repo root
+      dockerfile: deploy/airflow/Dockerfile.airflow
+    image: my-airflow-toml:latest
+    depends_on:
+      - postgres
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/src
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../models:/opt/airflow/models
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["airflow", "webserver"]
+    ports:
+      - "8080:8080"
+
+  scheduler:
+    image: my-airflow-toml:latest
+    depends_on:
+      - webserver
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__CORE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@postgres/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      PYTHONPATH: /opt/airflow/src
+    volumes:
+      - ./dags:/opt/airflow/dags
+      - ./logs:/opt/airflow/logs
+      - ../../src:/opt/airflow/src
+      - ../../data:/opt/airflow/data
+      - ../../models:/opt/airflow/models
+      - /var/run/docker.sock:/var/run/docker.sock
+    entrypoint: ["airflow", "scheduler"]
+
+volumes:
+  postgres-db:

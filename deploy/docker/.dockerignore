@@ -1,0 +1,7 @@
+# don’t send these into the build context
+__pycache__/
+*.py[cod]
+.venv/
+data/
+models/
+.git

@@ -1,24 +1,57 @@
-# Python
+# Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
-*.egg-info/
+*$py.class
 
-# Virtual env
+# C extensions
+*.so
+
+# Distribution / packaging
+*.egg-info/
+dist/
+build/
+
+# Virtual envs
 uv/
 .venv/
 env/
+venv/
+
+# Poetry/Uv lock files
+poetry.lock
+uv.lock
 
 # VSCode
 .vscode/
 
+# macOS
+.DS_Store
+
+# Jupyter
+.ipynb_checkpoints/
 
 # Data, models, reports
 /data/
 /models/
 /reports/
 
+# Airflow logs (both host-mounted and container-generated)
+/logs/
+/deploy/airflow/logs/
 
-# Lock files
-poetry.lock
-uv.lock
-requirements.txt
+
+# SQLite DBs, if you’re using local metadata for Airflow or test runs
+*.db
+*.sqlite3
+
+# Docker
+# ignore override files, env files, images, etc.
+docker-compose.override.yml
+**/docker-compose.override.yml
+**/deploy/docker/*.tar
+**/deploy/docker/.env
+.env
+.env.*
+
+# OS files
+Thumbs.db

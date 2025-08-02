@@ -1,0 +1,7 @@
+# deploy/airflow/requirements.txt
+apache-airflow-providers-docker
+pandas>=2.1.2,<2.2
+scikit-learn==1.7.1
+joblib==1.5.1
+seaborn==0.13.2
+matplotlib==3.10.3

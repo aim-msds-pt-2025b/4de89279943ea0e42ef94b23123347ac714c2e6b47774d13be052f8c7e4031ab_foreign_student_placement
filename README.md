@@ -1,120 +1,76 @@
+
 # Foreign Student Placement ML Pipeline
 
 ---
 
-## Project Overview
+## 🏫 Homework 1: Core ML Pipeline
 
-As someone who once had the challenges of studying abroad myself, I know firsthand how difficult it can be to secure an internship or job after graduation. International students often face visa restrictions, language barriers, and have limited local networks that can leave even the most qualified candidates at a disadvantage. 
+### Project Overview
+
+As someone who once had the challenges of studying abroad myself, I know firsthand how difficult it can be to secure an internship or job after graduation. International students often face visa restrictions, language barriers, and have limited local networks that can leave even the most qualified candidates at a disadvantage.
 
 This small project aims to gather insights and potentially level the playing field by predicting placement success using a global student migration dataset, so universities and career services can intervene earlier and support those who need it most.
 
-By training and comparing models such as Random Forest, Gradient Boosting, Logistic Regression, SVM, and KNN, we not only identify which algorithms perform best but also figure out the most critical factors influencing placement. In today’s global job market, demand for skilled graduates often exceeds supply. Using data-driven insights helps institutions make better use of their resources and support student success worldwide.
+By training and comparing models such as Random Forest, Gradient Boosting, Logistic Regression, SVM, and KNN, we not only identify which algorithms perform best but also figure out the most critical factors influencing placement.
 
 ---
 
-## How to Get the Data
+### How to Get the Data
 
 We include a small sample in `data/` for quick testing. To download the full dataset:
 
 1. Go to  
-   [Kaggle Dataset](https://www.kaggle.com/datasets/atharvasoundankar/global-student-migration-and-higher-education-trends)
+   [Kaggle Dataset](https://www.kaggle.com/datasets/atharvasoundankar/global-student-migration-and-higher-education-trends)  
 2. Download the CSV and save it as  
    `data/global_student_migration.csv`
 
 ---
 
-## Setup Instructions
-
-### 1. Clone the repo
+### Setup Instructions
 
 ```bash
-git clone https://github.com/aim-msds-pt-2025b/748a75ce7964f4331a0d0f4ee45adabd8bb41932fbb0ca6ec6b08004e4a7cbf9_foreign_student_placement.git
-cd foreign_student_placement
-```
+git clone https://github.com/aim-msds-pt-2025b/4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement.git
+cd 4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement
+git checkout hw1-snapshot
 
-### 2. Create & activate your UV environment
+# initialize the venv and install all runtime + dev deps
+uv init --dev
 
-```bash
-python3.12 -m venv uv
-source uv/bin/activate      # macOS/Linux
-uv\Scripts\activate         # Windows
-```
+# if you ever need to re-sync (e.g. after adding a new dependency):
+uv sync --dev
 
-### 3. Install dependencies using `uv` and `pyproject.toml`
+# finally, install your pre-commit hooks
+pre-commit install
+````
 
-```bash
-uv pip install -e .[dev]
-```
-
-> 💡 If `uv` is not installed, install it first via:
+> **Optional backup**:
 >
 > ```bash
-> pip install uv
+> pip install -r requirements.txt
 > ```
-
-### 4. (Optional) Install from `requirements.txt` (backup method)
-
-If you prefer or need to install from a frozen requirements file:
-
-```bash
-pip install -r requirements.txt
-```
-
-### 5. Install pre-commit hooks (for formatting and linting)
-
-```bash
-pre-commit install
-```
 
 ---
 
-## Folder Structure
+### Folder Structure
 
 ```
 .
-├── data/                        # raw & minimal sample CSV
-├── notebooks/                   # exploratory & final “hash” notebooks
+├── data/                        # raw & sample CSV
+├── notebooks/                   # exploratory & final notebooks
 ├── src/                         # modular pipeline code
-├── models/                      # saved .pkl model artifacts
-├── reports/                     # metrics, confusion matrices, JSON/CSV summaries
-│   └── figures/                 # PNGs produced by visualization.py
+├── models/                      # saved .pkl artifacts
+├── reports/                     # metrics, confusion matrices, JSON/CSV
+│   └── figures/                 # PNGs by visualization.py
 ├── tests/                       # pytest unit tests
 ├── .pre-commit-config.yaml      # Black + Ruff hooks
-├── requirements.txt             # backup for runtime deps
-├── pyproject.toml               # project metadata & dependency config
+├── requirements.txt             # backup runtime deps
+├── pyproject.toml               # project metadata & deps
 └── README.md
 ```
 
 ---
 
-## Code Sections
-
-All core logic lives under `src/`, with one file per pipeline stage:
-
-- **`data_preprocessing.py`**  
-  Loads the CSV, drops identifier/leakage columns, maps “Placed”/“Not Placed” to 1/0, removes rows missing core features, splits into train/test (with stratification), and scales numeric columns.
-
-- **`feature_engineering.py`**  
-  Builds new features: study-duration interactions, polynomial terms, quantile buckets, count-encoding, category combinations, K-means cluster labels, then one-hot encodes & aligns train/test.
-
-- **`model_training.py`**  
-  Defines, trains & saves multiple base classifiers (RandomForest, GBM, LogisticRegression, SVM, kNN), runs hyperparameter search (RandomizedSearchCV), and assembles a soft-voting ensemble.
-
-- **`run_pipeline.py`**  
-  Orchestrates the full workflow: preprocess → feature engineer → train & tune models → evaluate → visualize → export final metrics.
-
----
-
-## Optional: Visualization
-
-- **`visualization.py`**  
-  Generates and exports key EDA and performance plots (target distributions, correlation heatmaps, ROC curves, confusion matrices) into `reports/figures/`.
-
----
-
-## Pre-commit Configuration
-
-We enforce formatting and linting on each commit using:
+### Pre-commit Configuration
 
 ```yaml
 repos:
@@ -131,17 +87,152 @@ repos:
         args: [--fix]
 ```
 
-- **Black** ensures consistent code formatting.
-- **Ruff** identifies and auto-fixes common linting issues.
+---
+
+## 🚀 Homework 2: Containerization & Orchestration
+
+### Project Overview
+
+Building on our core ML pipeline, we now containerize everything with Docker for environment consistency and orchestrate the end-to-end workflow in Apache Airflow, gaining clear DAG definitions, retries, logging, and a UI for monitoring.
 
 ---
 
-## Reflection
+### Setup Instructions
 
-When I first started this project, setting up a clean development environment and code-quality tooling proved more challenging than I expected. I lost my `.pre-commit-config.yaml` file at one point and had to rebuild it from scratch—reinstalling Black and Ruff, re-running `pre-commit install`, and even rewriting parts of my Git history to restore the hooks. I also ran into Git rebase conflicts and “non-fast-forward” errors when pushing to the remote repository, which forced me to learn how to safely abort or continue a rebase without losing work.
+1. **Install Docker & Compose**
+   Follow official docs:
 
-On the data side, my simple pytest fixtures kept collapsing the entire mini-datasets because the string `"None"` in some columns was automatically interpreted as a missing value (`NaN`). That caused every toy CSV I created to be dropped entirely by our `dropna()` step. To address this, I explored Pandas’ CSV-reading options (`keep_default_na=False`) and explicitly mapped `"None"` to a valid category so that only truly missing values would be removed. I also encountered scikit-learn errors when splitting very small datasets—using an integer `test_size` versus a fractional `test_size` required special handling to prevent empty train or test splits.
+   * Docker: [https://docs.docker.com/get-docker/](https://docs.docker.com/get-docker/)
+   * Compose: [https://docs.docker.com/compose/install/](https://docs.docker.com/compose/install/)
 
-With the data loading and testing pipeline finally stable, I was able to focus on feature engineering—creating interaction and ratio features, clustering, bucketization, and count-encoding—and then on model training and hyperparameter tuning. I compared five algorithms—Random Forest, Gradient Boosting, Logistic Regression, SVM, and KNN—and combined them in a soft-voting ensemble to boost overall performance. I then added a dedicated Visualization module so that all exploratory plots and model performance figures can be generated automatically.
+2. **Clone & switch branch**
 
-Despite the many bumps along the way—lost configs, rebasing nightmares, test failures, and convergence warnings—the end result is a fully automated, reproducible pipeline that enforces code style, validates data loading, trains and tunes models, generates plots, and saves final metrics. This journey reinforced for me the value of automation, thorough testing, and clear error handling at every stage of a machine learning project.
+   ```bash
+   git clone https://github.com/aim-msds-pt-2025b/4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement.git
+   cd 4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement
+   git checkout hw2-docker-airflow
+   ```
+
+3. **Start Airflow stack**
+
+   ```bash
+   cd deploy/airflow
+   docker-compose build
+   docker-compose up -d
+   ```
+
+4. **Initialize & create admin user**
+
+   ```bash
+   docker-compose exec webserver airflow db init
+   docker-compose exec webserver \
+     airflow users create \
+       --username admin \
+       --firstname Admin \
+       --lastname User \
+       --role Admin \
+       --email admin@example.com \
+       --password airflow
+   ```
+
+5. **Open UI & trigger DAG**
+   [http://127.0.0.1:8080](http://127.0.0.1:8080) → log in `admin`/`airflow` → trigger **hw2\_ml\_pipeline**.
+
+---
+### Docker Integration
+
+#### Dockerfile
+Our Dockerfile is based on the official `python:3.12-slim` image to keep the build lightweight while providing full Python support. We copy our ML pipeline code (`src/`) and the Airflow deployment files (`deploy/airflow/`) into the container. Inside the container, we install all Python dependencies listed in `pyproject.toml`, ensuring that the exact versions we tested locally are reproduced in every build. Finally, we set the container’s entrypoint to launch Airflow (either the webserver or the scheduler), so that when the container starts it automatically initializes the Airflow component without any additional commands.
+
+#### Building the Image
+To build our custom Airflow image, we run:
+
+```bash
+docker-compose build
+```
+
+This reads the `docker-compose.yml` which references our Dockerfile, pulls the base Python image, installs all dependencies, and packages our code into a ready-to-run Airflow container. Because the build context includes our `pyproject.toml`, any change to dependencies will trigger a rebuild of the environment layer.
+
+**Running Containers**
+We use `docker-compose up -d` to spin up three services:
+
+* **Postgres**: Serves as Airflow’s metadata database.
+* **Webserver**: Runs Airflow’s web UI on port 8080.
+* **Scheduler**: Executes the DAG and schedules tasks.
+
+By defining the entrypoint in each service, Docker Compose automatically starts the correct Airflow component—no manual commands inside the container are needed.
+
+**Volume Mounting Strategy**
+To achieve reproducibility and allow live code changes, we mount host directories into the containers:
+
+1. **`./dags` → `/opt/airflow/dags`**
+   All DAG definitions live here. Mounting it means editing a DAG file on the host immediately reflects in the Airflow UI without rebuilding the image.
+
+2. **`./logs` → `/opt/airflow/logs`**
+   Task logs and scheduler logs are persisted to the host, so they survive container restarts and can be inspected directly from the file system.
+
+3. **`../../src` → `/app/src`**
+   My core ML pipeline modules (preprocessing, training, etc.) are mounted into the Airflow container’s Python path. This ensures Airflow’s PythonOperator can import and run them as if they were installed in the container.
+
+4. **`../../data` → `/app/data`**
+   The raw CSV dataset is made available to both DockerOperator (in the pipeline image) and PythonOperator tasks without embedding large data files into the image.
+
+5. **`../../models` → `/app/models`**
+   Output model artifacts (pickles, metrics, figures) are written here. By mounting it, the host filesystem always contains the latest trained models and evaluation outputs, making post-run analysis straightforward.
+
+6. **`/var/run/docker.sock` → `/var/run/docker.sock`**
+   This mount allows the Airflow `DockerOperator` to spin up additional containers (e.g., the ML pipeline image) from within the Airflow container itself.
+
+Together, these mounts decouple the containerized runtime environment from the host’s file structure while providing seamless two-way synchronization of code, data, logs, and artifacts—key to a reproducible, editable, and inspectable MLOps setup.
+
+
+---
+
+### Deploy Folder Structure
+
+```
+deploy/
+└── airflow/
+    ├── dags/
+    │   └── ml_pipeline_dag.py     # Airflow DAG definition
+    ├── logs/                      # persisted task logs
+    ├── Dockerfile.airflow        # custom Airflow image build
+    └── docker-compose.yml        # local Airflow stack
+└── docker/
+    ├── Dockerfile                # ML pipeline image build
+    └── .dockerignore
+```
+
+---
+
+### Airflow DAG
+
+* **File**: `deploy/airflow/dags/ml_pipeline_dag.py`
+
+* **Tasks** using `PythonOperator`:
+
+  1. **preprocess**
+  2. **engineer**
+  3. **train\_base**
+  4. **tune\_models**
+  5. **build\_ensemble**
+  6. **evaluate**
+  7. **select\_save**
+  8. **plot\_target** & **plot\_corr** (parallel)
+  9. **plot\_roc** → **plot\_conf\_matrix**
+
+* **Dependency graph**:
+  `preprocess → engineer → train_base → tune_models → build_ensemble → evaluate → select_save → [plot_target, plot_corr] → plot_roc → plot_conf_matrix`
+
+* **Scheduling**: manual only (`schedule_interval=None`, `catchup=False`).
+
+---
+
+### Reflection  
+On my home computer Docker would simply refuse to start until I went into the BIOS and enabled hardware virtualization—an extra step I never needed on my work laptop or personal laptop. This BIOS tweak taught me that, beyond code and containers, underlying hardware settings can make or break your MLOps setup, and now I always check that virtualization flag first which I found in the task manager.
+
+I also began by wrapping the entire ML pipeline in one big `DockerOperator` task, but found the Airflow UI much more insightful when each stage—preprocessing, feature engineering, model training, tuning, evaluation, plotting—was its own `PythonOperator`. Splitting tasks this way made dependencies explicit, improved retry granularity, and gave me a clearer picture of where things might fail or need tuning.
+
+Juggling these challenges across three different machines and adapting my DAG design deepened my appreciation for immutable, reproducible environments and for Airflow’s orchestration power. Wrestling with hardware settings, volume mounts, and operator choices was frustrating at times, but now I’m confident I can deploy and debug a robust MLOps workflow anywhere.  
+
+---
