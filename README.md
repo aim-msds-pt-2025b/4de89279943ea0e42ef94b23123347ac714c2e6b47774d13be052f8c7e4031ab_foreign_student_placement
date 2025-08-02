@@ -1,4 +1,4 @@
-````markdown
+
 # Foreign Student Placement ML Pipeline
 
 ---
@@ -29,12 +29,17 @@ We include a small sample in `data/` for quick testing. To download the full dat
 ### Setup Instructions
 
 ```bash
-git clone https://github.com/your-org/your-repo.git
-cd your-repo
-python3.12 -m venv uv
-source uv/bin/activate      # macOS/Linux
-uv\Scripts\activate         # Windows
-uv pip install -e .[dev]
+git clone https://github.com/aim-msds-pt-2025b/4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement.git
+cd 4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement
+git checkout hw1-snapshot
+
+# initialize the venv and install all runtime + dev deps
+uv init --dev
+
+# if you ever need to re-sync (e.g. after adding a new dependency):
+uv sync --dev
+
+# finally, install your pre-commit hooks
 pre-commit install
 ````
 
@@ -103,8 +108,8 @@ Building on our core ML pipeline, we now containerize everything with Docker for
 2. **Clone & switch branch**
 
    ```bash
-   git clone https://github.com/your-org/your-repo.git
-   cd your-repo
+   git clone https://github.com/aim-msds-pt-2025b/4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement.git
+   cd 4de89279943ea0e42ef94b23123347ac714c2e6b47774d13be052f8c7e4031ab_foreign_student_placement
    git checkout hw2-docker-airflow
    ```
 
@@ -136,17 +141,17 @@ Building on our core ML pipeline, we now containerize everything with Docker for
 ---
 ### Docker Integration
 
-**Dockerfile**
-Our Dockerfile is based on the official `python:3.12-slim` image to keep the build lightweight while providing full Python support. We copy our ML pipeline code (`src/`) and the Airflow deployment files (`deploy/airflow/`) into the container. Inside the container, we install all Python dependencies listed in `requirements.txt`, ensuring that the exact versions we tested locally are reproduced in every build. Finally, we set the container’s entrypoint to launch Airflow (either the webserver or the scheduler), so that when the container starts it automatically initializes the Airflow component without any additional commands.
+#### Dockerfile
+Our Dockerfile is based on the official `python:3.12-slim` image to keep the build lightweight while providing full Python support. We copy our ML pipeline code (`src/`) and the Airflow deployment files (`deploy/airflow/`) into the container. Inside the container, we install all Python dependencies listed in `pyproject.toml`, ensuring that the exact versions we tested locally are reproduced in every build. Finally, we set the container’s entrypoint to launch Airflow (either the webserver or the scheduler), so that when the container starts it automatically initializes the Airflow component without any additional commands.
 
-**Building the Image**
+#### Building the Image
 To build our custom Airflow image, we run:
 
 ```bash
 docker-compose build
 ```
 
-This reads the `docker-compose.yml` which references our Dockerfile, pulls the base Python image, installs all dependencies, and packages our code into a ready-to-run Airflow container. Because the build context includes our `pyproject.toml` and `requirements.txt`, any change to dependencies will trigger a rebuild of the environment layer.
+This reads the `docker-compose.yml` which references our Dockerfile, pulls the base Python image, installs all dependencies, and packages our code into a ready-to-run Airflow container. Because the build context includes our `pyproject.toml`, any change to dependencies will trigger a rebuild of the environment layer.
 
 **Running Containers**
 We use `docker-compose up -d` to spin up three services:
@@ -167,7 +172,7 @@ To achieve reproducibility and allow live code changes, we mount host directorie
    Task logs and scheduler logs are persisted to the host, so they survive container restarts and can be inspected directly from the file system.
 
 3. **`../../src` → `/app/src`**
-   Our core ML pipeline modules (preprocessing, training, etc.) are mounted into the Airflow container’s Python path. This ensures Airflow’s PythonOperator can import and run them as if they were installed in the container.
+   My core ML pipeline modules (preprocessing, training, etc.) are mounted into the Airflow container’s Python path. This ensures Airflow’s PythonOperator can import and run them as if they were installed in the container.
 
 4. **`../../data` → `/app/data`**
    The raw CSV dataset is made available to both DockerOperator (in the pipeline image) and PythonOperator tasks without embedding large data files into the image.
@@ -226,6 +231,7 @@ deploy/
 ### Reflection
 
 **Challenge:** Getting host-mounted code & data volumes to work with Airflow’s Python path and DockerOperator mounts.
+
 **Resolution:** Standardized on host paths under `/app/*` for Airflow tasks and used simple `requirements.txt` installs inside the custom image, avoiding editable installs that conflicted with volume mounts.
 
 ---
