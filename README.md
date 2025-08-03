@@ -39,7 +39,7 @@ uv init --dev
 # if you ever need to re-sync (e.g. after adding a new dependency):
 uv sync --dev
 
-# finally, install your pre-commit hooks
+# finally, install ymy pre-commit hooks
 pre-commit install
 ````
 
@@ -93,7 +93,7 @@ repos:
 
 ### Project Overview
 
-Building on our core ML pipeline, we now containerize everything with Docker for environment consistency and orchestrate the end-to-end workflow in Apache Airflow, gaining clear DAG definitions, retries, logging, and a UI for monitoring.
+Building on my core ML pipeline, we now containerize everything with Docker for environment consistency and orchestrate the end-to-end workflow in Apache Airflow, gaining clear DAG definitions, retries, logging, and a UI for monitoring.
 
 ---
 
@@ -142,16 +142,16 @@ Building on our core ML pipeline, we now containerize everything with Docker for
 ### Docker Integration
 
 #### Dockerfile
-Our Dockerfile is based on the official `python:3.12-slim` image to keep the build lightweight while providing full Python support. We copy our ML pipeline code (`src/`) and the Airflow deployment files (`deploy/airflow/`) into the container. Inside the container, we install all Python dependencies listed in `pyproject.toml`, ensuring that the exact versions we tested locally are reproduced in every build. Finally, we set the container’s entrypoint to launch Airflow (either the webserver or the scheduler), so that when the container starts it automatically initializes the Airflow component without any additional commands.
+My Dockerfile is based on the official `python:3.12-slim` image to keep the build lightweight while providing full Python support. We copy my ML pipeline code (`src/`) and the Airflow deployment files (`deploy/airflow/`) into the container. Inside the container, we install all Python dependencies listed in `pyproject.toml`, ensuring that the exact versions we tested locally are reproduced in every build. Finally, we set the container’s entrypoint to launch Airflow (either the webserver or the scheduler), so that when the container starts it automatically initializes the Airflow component without any additional commands.
 
 #### Building the Image
-To build our custom Airflow image, we run:
+To build my custom Airflow image, we run:
 
 ```bash
 docker-compose build
 ```
 
-This reads the `docker-compose.yml` which references our Dockerfile, pulls the base Python image, installs all dependencies, and packages our code into a ready-to-run Airflow container. Because the build context includes our `pyproject.toml`, any change to dependencies will trigger a rebuild of the environment layer.
+This reads the `docker-compose.yml` which references my Dockerfile, pulls the base Python image, installs all dependencies, and packages my code into a ready-to-run Airflow container. Because the build context includes my `pyproject.toml`, any change to dependencies will trigger a rebuild of the environment layer.
 
 **Running Containers**
 We use `docker-compose up -d` to spin up three services:
@@ -229,7 +229,7 @@ deploy/
 ---
 
 ### Reflection  
-On my home computer Docker would simply refuse to start until I went into the BIOS and enabled hardware virtualization—an extra step I never needed on my work laptop or personal laptop. This BIOS tweak taught me that, beyond code and containers, underlying hardware settings can make or break your MLOps setup, and now I always check that virtualization flag first which I found in the task manager.
+On my home computer Docker would simply refuse to start until I went into the BIOS and enabled hardware virtualization—an extra step I never needed on my work laptop or personal laptop. This BIOS tweak taught me that, beyond code and containers, underlying hardware settings can make or break ymy MLOps setup, and now I always check that virtualization flag first which I found in the task manager.
 
 I also began by wrapping the entire ML pipeline in one big `DockerOperator` task, but found the Airflow UI much more insightful when each stage—preprocessing, feature engineering, model training, tuning, evaluation, plotting—was its own `PythonOperator`. Splitting tasks this way made dependencies explicit, improved retry granularity, and gave me a clearer picture of where things might fail or need tuning.
 
