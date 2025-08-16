@@ -1,0 +1,30 @@
+@echo off
+REM MLflow UI Launcher Script for Windows
+REM This script starts the MLflow tracking UI
+
+echo 🚀 Starting MLflow Tracking UI...
+
+REM Set MLflow backend store URI (local file-based)
+set MLFLOW_BACKEND_STORE_URI=file://./mlruns
+
+REM Set MLflow default artifact root (local file-based)
+set MLFLOW_DEFAULT_ARTIFACT_ROOT=./mlruns
+
+REM Check if mlruns directory exists, create if not
+if not exist "mlruns" (
+    echo 📁 Creating mlruns directory...
+    mkdir mlruns
+)
+
+echo 📊 MLflow UI will be available at: http://localhost:5000
+echo 🔍 Backend store: %MLFLOW_BACKEND_STORE_URI%
+echo 📁 Artifact root: %MLFLOW_DEFAULT_ARTIFACT_ROOT%
+echo.
+echo 💡 Tips:
+echo    • Use Ctrl+C to stop the server
+echo    • Run your ML pipeline to see experiments populate
+echo    • Access the Model Registry to manage model versions
+echo.
+
+REM Start MLflow UI
+mlflow ui --backend-store-uri "%MLFLOW_BACKEND_STORE_URI%" --default-artifact-root "%MLFLOW_DEFAULT_ARTIFACT_ROOT%" --host 0.0.0.0 --port 5000

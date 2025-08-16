@@ -35,6 +35,11 @@ uv.lock
 /models/
 /reports/
 
+# MLflow
+mlruns/
+mlartifacts/
+.mlflow/
+
 # Airflow logs (both host-mounted and container-generated)
 /logs/
 /deploy/airflow/logs/

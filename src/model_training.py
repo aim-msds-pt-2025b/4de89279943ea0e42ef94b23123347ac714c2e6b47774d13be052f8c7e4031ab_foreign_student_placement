@@ -10,6 +10,7 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
+from mlflow_config import MLflowTracker
 
 # suppress convergence warnings on LogisticRegression
 warnings.filterwarnings("ignore", category=UserWarning)
@@ -36,7 +37,8 @@ def train_base_models(X_train, y_train, models_dir="models"):
     return saved
 
 
-def tune_models(X_train, y_train):
+def tune_models(X_train, y_train, X_test=None, y_test=None, track_mlflow=True):
+    """Tune hyperparameters and optionally track with MLflow."""
     param_grids = {
         "randomforest": {
             "n_estimators": [100, 200, 500],
@@ -67,6 +69,10 @@ def tune_models(X_train, y_train):
     }
     cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
     best = {}
+
+    # Initialize MLflow tracker if requested
+    mlflow_tracker = MLflowTracker() if track_mlflow else None
+
     for name, model in base.items():
         rs = RandomizedSearchCV(
             model,
@@ -81,6 +87,30 @@ def tune_models(X_train, y_train):
         )
         rs.fit(X_train, y_train)
         best[name] = rs.best_estimator_
+
+        # Track with MLflow if enabled and test data provided
+        if (
+            track_mlflow
+            and mlflow_tracker
+            and X_test is not None
+            and y_test is not None
+        ):
+            try:
+                run_id = mlflow_tracker.log_model_run(
+                    model_name=name,
+                    model=rs.best_estimator_,
+                    X_test=X_test,
+                    y_test=y_test,
+                    hyperparams=rs.best_params_,
+                    additional_metrics={
+                        "cv_score": rs.best_score_,
+                        "cv_std": rs.cv_results_["std_test_score"][rs.best_index_],
+                    },
+                )
+                print(f"MLflow run logged for {name}: {run_id}")
+            except Exception as e:
+                print(f"Warning: Could not log {name} to MLflow: {e}")
+
     return best
 
 

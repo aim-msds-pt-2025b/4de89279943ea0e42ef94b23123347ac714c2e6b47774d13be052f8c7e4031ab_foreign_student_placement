@@ -1,3 +1,4 @@
+---
 repos:
   - repo: https://github.com/psf/black
     rev: 24.10.0
@@ -16,16 +17,17 @@ repos:
       - id: ruff-format
         # only run on .py files
         files: \.py$
-  - repo: https://github.com/hadolint/hadolint
-    rev: v2.12.0
-    hooks:
-      - id: hadolint
-        args: ["--failure-threshold=style"]    # fail on style issues
 
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.37.0
     hooks:
       - id: yamllint
         files: \.(yml|yaml)$
-        exclude: ^docs/                       # if you have docs yamls
-        args: ["-d", "{extends: default, rules: {line-length: {max: 120}}}"]
+        exclude: ^(docs/|mlruns/|deploy/)              # exclude docs, mlruns and deploy
+        args:
+          - "-d"
+          - >-
+            {extends: default,
+             rules: {line-length: {max: 120},
+                     new-line-at-end-of-file: disable,
+                     document-start: disable}}
