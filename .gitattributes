@@ -1,0 +1,15 @@
+# Normalize line endings for text files
+*.py   text eol=lf
+*.yaml text eol=lf
+*.yml  text eol=lf
+*.sh   text eol=lf
+*.md   text eol=lf
+*.toml text eol=lf
+*.csv  text eol=lf
+
+# Keep binary files untouched
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.gif  binary
+*.pdf  binary
