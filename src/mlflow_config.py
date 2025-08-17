@@ -5,7 +5,11 @@ import mlflow.sklearn
 import mlflow.tracking
 from mlflow import MlflowClient
 from typing import Dict, Optional
+import inspect
+import sys
 import pandas as pd
+import warnings
+import logging
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -13,6 +17,13 @@ from sklearn.metrics import (
     f1_score,
     roc_auc_score,
 )
+
+# Suppress MLflow deprecation warnings
+warnings.filterwarnings("ignore", message=".*artifact_path.*deprecated.*")
+warnings.filterwarnings("ignore", category=FutureWarning, module="mlflow")
+
+# Also suppress MLflow logging warnings
+logging.getLogger("mlflow").setLevel(logging.ERROR)
 
 
 class MLflowTracker:
@@ -102,11 +113,83 @@ class MLflowTracker:
 
             mlflow.log_metrics(metrics)
 
-            # Log model
-            mlflow.sklearn.log_model(
-                sk_model=model,
-                artifact_path="model",
-                registered_model_name=f"student_placement_{model_name}",
+            # Create input example for model signature (sample of test data)
+            # Handle both pandas DataFrame and numpy array inputs
+            if hasattr(X_test, "iloc"):
+                # DataFrame case
+                input_example = X_test.iloc[:5]
+            elif hasattr(X_test, "shape"):
+                # Numpy array case
+                input_example = X_test[:5]
+            else:
+                # Fallback
+                input_example = None
+
+            # Prepare stable environment spec to avoid env inference warnings
+            try:
+                import sklearn as _sk
+                import pandas as _pd
+                import numpy as _np
+                import cloudpickle as _cp
+                import mlflow as _mf
+
+                pip_requirements = [
+                    f"scikit-learn=={_sk.__version__}",
+                    f"pandas=={_pd.__version__}",
+                    f"numpy=={_np.__version__}",
+                    f"cloudpickle=={_cp.__version__}",
+                    f"mlflow=={_mf.__version__}",
+                ]
+            except Exception:
+                # Fall back to unpinned minimal set
+                pip_requirements = [
+                    "scikit-learn",
+                    "pandas",
+                    "numpy",
+                    "cloudpickle",
+                    "mlflow",
+                ]
+
+            # Build a minimal conda env to avoid MLflow trying to resolve pip version
+            py_ver = f"{sys.version_info.major}.{sys.version_info.minor}"
+            conda_env = {
+                "name": "mlflow-env",
+                "channels": ["conda-forge"],
+                "dependencies": [
+                    f"python={py_ver}.*",
+                    "pip",
+                    {"pip": pip_requirements},
+                ],
+            }
+
+            # Prepare kwargs with feature-detection for MLflow version compatibility
+            log_model_sig = inspect.signature(mlflow.sklearn.log_model)
+            kwargs: Dict[str, object] = {"sk_model": model}
+            if "name" in log_model_sig.parameters:
+                kwargs["name"] = "model"
+            else:
+                # Backward-compatible fallback; may emit deprecation warning on newer MLflow
+                kwargs["artifact_path"] = "model"
+            if (
+                input_example is not None
+                and "input_example" in log_model_sig.parameters
+            ):
+                kwargs["input_example"] = input_example
+            # Provide exactly one env spec: prefer pip_requirements if supported, else conda_env
+            if "pip_requirements" in log_model_sig.parameters:
+                kwargs["pip_requirements"] = pip_requirements
+            elif "conda_env" in log_model_sig.parameters:
+                kwargs["conda_env"] = conda_env
+            if "env_manager" in log_model_sig.parameters:
+                # Prefer virtualenv to avoid conda on some setups
+                kwargs["env_manager"] = "virtualenv"
+
+            # Log model (robust to different MLflow versions)
+            model_info = mlflow.sklearn.log_model(**kwargs)
+
+            # Register the model separately (works across versions)
+            mlflow.register_model(
+                model_uri=model_info.model_uri, name=f"student_placement_{model_name}"
             )
 
             # Log model info

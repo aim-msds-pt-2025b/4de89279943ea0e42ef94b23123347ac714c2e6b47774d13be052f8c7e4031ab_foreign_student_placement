@@ -1,4 +1,5 @@
 import os
+from typing import List, Dict, Any
 import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
@@ -25,7 +26,7 @@ def plot_target_distribution(df: pd.DataFrame):
     plt.close(fig)
 
 
-def plot_feature_correlations(df: pd.DataFrame, numeric_cols: list[str]):
+def plot_feature_correlations(df: pd.DataFrame, numeric_cols: List[str]):
     """
     Heatmap of Pearson correlations between numeric features.
     """
@@ -38,7 +39,7 @@ def plot_feature_correlations(df: pd.DataFrame, numeric_cols: list[str]):
     plt.close(fig)
 
 
-def plot_roc_curves(models: dict[str, any], X_test: pd.DataFrame, y_test: pd.Series):
+def plot_roc_curves(models: Dict[str, Any], X_test: pd.DataFrame, y_test: pd.Series):
     """
     Overlaid ROC curves for any model that supports predict_proba().
     """

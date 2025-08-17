@@ -21,7 +21,7 @@ except ImportError:
 
 # Try optional visualization imports separately to avoid hard failures when seaborn is missing
 try:
-    from .visualization import (
+    from visualization import (
         plot_target_distribution,
         plot_feature_correlations,
         plot_roc_curves,
@@ -31,7 +31,7 @@ try:
     VIS_AVAILABLE = True
 except Exception:
     try:
-        from visualization import (
+        from .visualization import (
             plot_target_distribution,
             plot_feature_correlations,
             plot_roc_curves,
@@ -57,10 +57,10 @@ except Exception:
 
 
 def main():
-    print("🚀 Starting ML Pipeline...")
+    print(">> Starting ML Pipeline...")
 
     # 1) Load & preprocess
-    print("📊 Loading and preprocessing data...")
+    print(">> Loading and preprocessing data...")
     X_train, X_test, y_train, y_test = preprocess_data(
         "data/global_student_migration.csv"
     )
@@ -88,7 +88,7 @@ def main():
     all_models = {**best_estimators, "ensemble": ensemble}
 
     # 6) Evaluate all tuned models + ensemble
-    print("📈 Evaluating models...")
+    print(">> Evaluating models...")
     metrics_df = evaluate_models(all_models, X_test_fe, y_test)
     print("\nModel Performance:")
     print(metrics_df)
@@ -104,7 +104,7 @@ def main():
         metrics_txt_path="reports/metrics.txt",
     )
     save_model(all_models[best_name], "models/best_model.joblib")
-    print(f"\n🏆 Best model: {best_name}")
+    print(f"\n>> Best model: {best_name}")
     print("Confusion matrix:\n", cm)
 
     # 8) Visualizations & ROC curves (only if viz module is available)
@@ -123,9 +123,9 @@ def main():
         plot_feature_correlations(raw, numeric_cols)
         plot_roc_curves(all_models, X_test_fe, y_test)
         plot_confusion_matrix(all_models[best_name], X_test_fe, y_test, name=best_name)
-        print("\n✅ All figures exported to reports/figures/")
+        print("\n>> All figures exported to reports/figures/")
     else:
-        print("ℹ️ Visualization module not available, skipping plots.")
+        print(">> Visualization module not available, skipping plots.")
 
     # 9) SHAP interpretability (best model if linear-like)
     if SHAP_AVAILABLE and hasattr(all_models[best_name], "coef_"):
@@ -143,9 +143,9 @@ def main():
                 "reports/figures/shap_summary.png", dpi=150, bbox_inches="tight"
             )
             plt.close()
-            print("✅ SHAP plot saved to reports/figures/shap_summary.png")
+            print(">> SHAP plot saved to reports/figures/shap_summary.png")
         except Exception as e:
-            print(f"⚠️ SHAP analysis failed: {e}")
+            print(f">> SHAP analysis failed: {e}")
 
     # 10) Baseline stats for drift detection (numeric-only; cast bool -> int)
     baseline_stats = {}
@@ -167,7 +167,7 @@ def main():
         }
     with open("models/baseline_stats.json", "w") as f:
         json.dump(baseline_stats, f, indent=2)
-    print("✅ Baseline stats saved for drift detection")
+    print(">> Baseline stats saved for drift detection")
 
 
 if __name__ == "__main__":
