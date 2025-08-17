@@ -5,6 +5,7 @@ import mlflow.sklearn
 import mlflow.tracking
 from mlflow import MlflowClient
 from typing import Dict, Optional
+import os
 import inspect
 import sys
 import pandas as pd
@@ -32,7 +33,7 @@ class MLflowTracker:
     def __init__(
         self,
         experiment_name: str = "student_placement_prediction",
-        tracking_uri: str = "mlruns",
+        tracking_uri: Optional[str] = None,
     ):
         """Initialize MLflow tracker.
 
@@ -41,7 +42,9 @@ class MLflowTracker:
             tracking_uri: MLflow tracking URI (local by default)
         """
         self.experiment_name = experiment_name
-        self.tracking_uri = tracking_uri
+        # allow override from environment, useful in Airflow/Compose
+        env_uri = os.getenv("MLFLOW_TRACKING_URI")
+        self.tracking_uri = tracking_uri or env_uri or "mlruns"
         self.client = None
         self._setup_mlflow()
 

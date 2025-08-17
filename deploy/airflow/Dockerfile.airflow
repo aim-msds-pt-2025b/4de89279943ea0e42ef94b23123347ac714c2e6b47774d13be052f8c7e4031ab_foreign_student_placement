@@ -1,17 +1,28 @@
 FROM apache/airflow:2.9.3
 
-# 1) Become root to install our project
+# 1) Become root to install system dependencies
 USER root
 WORKDIR /opt/airflow
 
-# 2) Copy in your TOML + source
-COPY pyproject.toml uv.lock README.md ./
-COPY src/ ./src
+# 2) Copy project metadata first (better cache)
+COPY pyproject.toml README.md ./
 
-# 3) Install your package (and its [project] deps) via PEP-517
-# hadolint ignore=DL3013,DL3042
+# 3) Install heavy runtime deps in a separate cached layer
 RUN python -m pip install --upgrade pip \
-  && python -m pip install --no-cache-dir .
+  && python -m pip install --no-cache-dir \
+    pandas>=2.1 \
+    scikit-learn>=1.2,<2.0 \
+    joblib>=1.2,<2.0 \
+    seaborn>=0.12.0 \
+    matplotlib>=3.7.0 \
+    mlflow==3.1.4 \
+    evidently==0.7.11 \
+    psycopg2-binary==2.9.10 \
+    shap>=0.48.0
 
-# 4) Drop back to the airflow user
+# 4) Copy source last; install package without pulling deps again
+COPY src/ ./src
+RUN python -m pip install --no-cache-dir --no-deps .
+
+# 5) Drop back to the airflow user
 USER airflow

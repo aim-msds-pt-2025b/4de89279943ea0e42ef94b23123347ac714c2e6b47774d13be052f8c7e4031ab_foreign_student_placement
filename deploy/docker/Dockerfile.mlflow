@@ -1,0 +1,19 @@
+# Minimal MLflow server image per HW3
+FROM python:3.11-slim
+
+ENV PIP_NO_CACHE_DIR=1
+
+RUN pip install --no-cache-dir \
+    mlflow==3.1.4 \
+    psycopg2-binary==2.9.10 \
+    boto3==1.34.82
+
+EXPOSE 5000
+
+ENV BACKEND_STORE_URI=postgresql+psycopg2://mlflow:mlflow@postgres:5432/mlflow
+ENV ARTIFACT_ROOT=file:/mlruns
+ENV MLFLOW_TRACKING_URI=http://0.0.0.0:5000
+
+VOLUME ["/mlruns"]
+
+CMD ["mlflow", "server", "--host", "0.0.0.0", "--port", "5000", "--backend-store-uri", "${BACKEND_STORE_URI}", "--default-artifact-root", "${ARTIFACT_ROOT}"]

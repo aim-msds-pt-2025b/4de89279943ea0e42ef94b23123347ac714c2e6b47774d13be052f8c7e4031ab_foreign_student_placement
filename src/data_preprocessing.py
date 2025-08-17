@@ -1,9 +1,23 @@
+import os
+import json
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
+try:
+    from drift_detection import create_synthetic_drift_data
+except Exception:  # optional
+    create_synthetic_drift_data = None
 
-def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
+
+def preprocess_data(
+    path: str,
+    test_size=0.2,
+    random_state: int = 42,
+    emit_drifted: bool = False,
+    drift_magnitude: float = 0.2,
+    reports_dir: str = "reports",
+):
     """
     1) Load CSV (with keep_default_na=False so “None” stays a string)
     2) Drop identifier/leakage columns
@@ -60,5 +74,31 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
     scaler = StandardScaler().fit(X_train[num_cols])
     X_train[num_cols] = scaler.transform(X_train[num_cols])
     X_test[num_cols] = scaler.transform(X_test[num_cols])
+
+    if emit_drifted and create_synthetic_drift_data is not None:
+        # Construct current data by adding synthetic drift to test split (for demo)
+        current = pd.concat([X_test.copy(), y_test.rename("placement_status")], axis=1)
+        drifted = create_synthetic_drift_data(
+            current,
+            drift_magnitude=drift_magnitude,
+            drift_features=[
+                "gpa_or_score",
+                "test_score",
+                "year_of_enrollment",
+                "graduation_year",
+            ],
+        )
+        os.makedirs(reports_dir, exist_ok=True)
+        drift_meta = {
+            "generated": True,
+            "drift_magnitude": drift_magnitude,
+            "rows": len(drifted),
+        }
+        with open(os.path.join(reports_dir, "drift_meta.json"), "w") as f:
+            json.dump(drift_meta, f, indent=2)
+        # return both original and drifted current datasets for downstream use
+        X_drift = drifted.drop(columns=["placement_status"])  # type: ignore
+        y_drift = drifted["placement_status"]  # type: ignore
+        return X_train, X_test, y_train, y_test, X_drift, y_drift
 
     return X_train, X_test, y_train, y_test
