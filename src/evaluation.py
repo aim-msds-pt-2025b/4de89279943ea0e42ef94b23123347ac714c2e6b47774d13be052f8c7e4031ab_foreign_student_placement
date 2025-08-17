@@ -10,6 +10,34 @@ from sklearn.metrics import (
 )
 
 
+def eval_models(models: dict, X_test, y_test):
+    """Simple evaluation function for run_pipeline_new.py"""
+    rows = []
+    for name, m in models.items():
+        y_pred = m.predict(X_test)
+        auc = float("nan")
+        if hasattr(m, "predict_proba"):
+            try:
+                y_prob = m.predict_proba(X_test)[:, 1]
+                auc = roc_auc_score(y_test, y_prob)
+            except Exception:
+                pass
+        rows.append({
+            "model": name,
+            "accuracy": accuracy_score(y_test, y_pred),
+            "precision": precision_score(y_test, y_pred, zero_division=0),
+            "recall": recall_score(y_test, y_pred, zero_division=0),
+            "f1": f1_score(y_test, y_pred, zero_division=0),
+            "roc_auc": auc
+        })
+    return pd.DataFrame(rows).set_index("model")
+
+
+def confusion(m, X, y):
+    """Simple confusion matrix helper for run_pipeline_new.py"""
+    return confusion_matrix(y, m.predict(X))
+
+
 def evaluate_models(models_dict, X_test, y_test):
     """
     Returns a DataFrame of metrics for each model.

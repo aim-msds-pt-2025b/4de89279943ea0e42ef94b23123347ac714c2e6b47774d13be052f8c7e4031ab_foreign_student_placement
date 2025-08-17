@@ -1,6 +1,8 @@
 import os
 import joblib
 import warnings
+from pathlib import Path
+
 from sklearn.ensemble import (
     RandomForestClassifier,
     GradientBoostingClassifier,
@@ -9,20 +11,32 @@ from sklearn.ensemble import (
 from sklearn.linear_model import LogisticRegression
 from sklearn.svm import SVC
 from sklearn.neighbors import KNeighborsClassifier
-from sklearn.model_selection import RandomizedSearchCV, StratifiedKFold
-from mlflow_config import MLflowTracker
+from sklearn.model_selection import (
+    RandomizedSearchCV,
+    StratifiedKFold,
+    GridSearchCV,
+)
+from sklearn.dummy import DummyClassifier
+from sklearn.exceptions import ConvergenceWarning
+
+# Optional MLflow import
+try:
+    from mlflow_config import MLflowTracker
+except ImportError:
+    MLflowTracker = None
 
 # suppress convergence warnings on LogisticRegression
 warnings.filterwarnings("ignore", category=UserWarning)
 warnings.filterwarnings("ignore", category=FutureWarning)
+warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
-def train_base_models(X_train, y_train, models_dir="models"):
+def train_base_models(X_train, y_train, models_dir: str = "models"):
     os.makedirs(models_dir, exist_ok=True)
     models = {
         "randomforest": RandomForestClassifier(random_state=42),
         "logisticregression": LogisticRegression(
-            solver="saga", max_iter=5000, random_state=42, n_jobs=-1
+            solver="lbfgs", max_iter=2000, random_state=42, n_jobs=-1
         ),
         "gradientboosting": GradientBoostingClassifier(random_state=42),
         "svm": SVC(probability=True, random_state=42),
@@ -37,47 +51,50 @@ def train_base_models(X_train, y_train, models_dir="models"):
     return saved
 
 
-def tune_models(X_train, y_train, X_test=None, y_test=None, track_mlflow=True):
+def tune_models(X_train, y_train, X_test=None, y_test=None, track_mlflow: bool = True):
     """Tune hyperparameters and optionally track with MLflow."""
     param_grids = {
         "randomforest": {
-            "n_estimators": [100, 200, 500],
-            "max_depth": [None, 10, 20, 30],
-            "min_samples_split": [2, 5, 10],
+            "n_estimators": [100, 200],
+            "max_depth": [None, 10, 20],
+            "min_samples_split": [2, 5],
         },
         "gradientboosting": {
-            "n_estimators": [100, 200, 300],
-            "learning_rate": [0.01, 0.1, 0.2],
-            "max_depth": [3, 5, 7],
+            "n_estimators": [100, 200],
+            "learning_rate": [0.05, 0.1],
+            "max_depth": [3, 5],
         },
         "logisticregression": {
-            "C": [0.01, 0.1, 1, 10],
-            "penalty": [None, "l2", "l1"],
-            "solver": ["saga"],
+            # Use lbfgs with L2 only to avoid incompatible/slow combos and warnings
+            "C": [0.1, 1, 10],
+            "penalty": ["l2"],
+            "solver": ["lbfgs"],
             "max_iter": [2000],
         },
         "knn": {
-            "n_neighbors": [3, 5, 7, 9],
+            "n_neighbors": [3, 5, 7],
             "weights": ["uniform", "distance"],
         },
     }
     base = {
         "randomforest": RandomForestClassifier(random_state=42),
         "gradientboosting": GradientBoostingClassifier(random_state=42),
+        # n_jobs is ignored by lbfgs but kept harmlessly; set solver via grid
         "logisticregression": LogisticRegression(random_state=42, n_jobs=-1),
         "knn": KNeighborsClassifier(),
     }
-    cv = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+    # Lighter CV to speed up runs
+    cv = StratifiedKFold(n_splits=3, shuffle=True, random_state=42)
     best = {}
 
     # Initialize MLflow tracker if requested
-    mlflow_tracker = MLflowTracker() if track_mlflow else None
+    mlflow_tracker = MLflowTracker() if (track_mlflow and MLflowTracker) else None
 
     for name, model in base.items():
         rs = RandomizedSearchCV(
             model,
             param_distributions=param_grids[name],
-            n_iter=10,
+            n_iter=6,
             scoring="f1",
             cv=cv,
             n_jobs=-1,
@@ -114,7 +131,7 @@ def tune_models(X_train, y_train, X_test=None, y_test=None, track_mlflow=True):
     return best
 
 
-def build_ensemble(best_estimators, X_train, y_train, models_dir="models"):
+def build_ensemble(best_estimators, X_train, y_train, models_dir: str = "models"):
     ensemble = VotingClassifier(
         estimators=[(n, m) for n, m in best_estimators.items()],
         voting="soft",
@@ -125,3 +142,35 @@ def build_ensemble(best_estimators, X_train, y_train, models_dir="models"):
     path = os.path.join(models_dir, "model_ensemble.pkl")
     joblib.dump(ensemble, path)
     return ensemble
+
+
+# --- Helpers used by run_pipeline_new.py ---
+def tune_logistic_regression(X, y):
+    param_grid = {
+        "C": [0.01, 0.1, 1, 3, 10],
+        "penalty": ["l2"],
+        "solver": ["lbfgs"],
+        "class_weight": [None],
+    }
+    lr = LogisticRegression(max_iter=1000)
+    gs = GridSearchCV(
+        lr,
+        param_grid,
+        scoring="roc_auc",
+        cv=5,
+        n_jobs=-1,
+        verbose=0,
+    )
+    gs.fit(X, y)
+    return gs.best_estimator_, gs.best_score_
+
+
+def train_dummy_baseline(X, y):
+    dummy = DummyClassifier(strategy="most_frequent")
+    dummy.fit(X, y)
+    return dummy
+
+
+def save_model(model, path: str):
+    Path(path).parent.mkdir(parents=True, exist_ok=True)
+    joblib.dump(model, path)

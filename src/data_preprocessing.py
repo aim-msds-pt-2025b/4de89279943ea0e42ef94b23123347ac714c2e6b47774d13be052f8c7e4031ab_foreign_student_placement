@@ -55,7 +55,7 @@ def preprocess_data(path: str, test_size=0.2, random_state: int = 42):
         X, y, test_size=test_size, random_state=random_state, stratify=y
     )
 
-    # 6) Scale numeric columns
+    # 6) Scale numeric columns only; keep categoricals as strings for later one-hot
     num_cols = ["gpa_or_score", "test_score", "year_of_enrollment", "graduation_year"]
     scaler = StandardScaler().fit(X_train[num_cols])
     X_train[num_cols] = scaler.transform(X_train[num_cols])
