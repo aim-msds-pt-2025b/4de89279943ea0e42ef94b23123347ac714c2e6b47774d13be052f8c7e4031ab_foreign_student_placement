@@ -22,14 +22,16 @@ def eval_models(models: dict, X_test, y_test):
                 auc = roc_auc_score(y_test, y_prob)
             except Exception:
                 pass
-        rows.append({
-            "model": name,
-            "accuracy": accuracy_score(y_test, y_pred),
-            "precision": precision_score(y_test, y_pred, zero_division=0),
-            "recall": recall_score(y_test, y_pred, zero_division=0),
-            "f1": f1_score(y_test, y_pred, zero_division=0),
-            "roc_auc": auc
-        })
+        rows.append(
+            {
+                "model": name,
+                "accuracy": accuracy_score(y_test, y_pred),
+                "precision": precision_score(y_test, y_pred, zero_division=0),
+                "recall": recall_score(y_test, y_pred, zero_division=0),
+                "f1": f1_score(y_test, y_pred, zero_division=0),
+                "roc_auc": auc,
+            }
+        )
     return pd.DataFrame(rows).set_index("model")
 
 

@@ -27,6 +27,7 @@ try:
         plot_roc_curves,
         plot_confusion_matrix,
     )
+
     VIS_AVAILABLE = True
 except Exception:
     try:
@@ -36,19 +37,20 @@ except Exception:
             plot_roc_curves,
             plot_confusion_matrix,
         )
+
         VIS_AVAILABLE = True
     except Exception:
         VIS_AVAILABLE = False
 import pandas as pd
 from pathlib import Path
 import json
-import numpy as np
 from pandas.api.types import is_numeric_dtype, is_bool_dtype
 
 # Optional imports
 try:
     import shap
     import matplotlib.pyplot as plt
+
     SHAP_AVAILABLE = True
 except Exception:
     SHAP_AVAILABLE = False
@@ -108,9 +110,16 @@ def main():
     # 8) Visualizations & ROC curves (only if viz module is available)
     if VIS_AVAILABLE:
         raw = pd.read_csv("data/global_student_migration.csv")
-        raw["placement_status"] = raw["placement_status"].map({"Placed": 1, "Not Placed": 0})
+        raw["placement_status"] = raw["placement_status"].map(
+            {"Placed": 1, "Not Placed": 0}
+        )
         plot_target_distribution(raw)
-        numeric_cols = ["gpa_or_score", "test_score", "year_of_enrollment", "graduation_year"]
+        numeric_cols = [
+            "gpa_or_score",
+            "test_score",
+            "year_of_enrollment",
+            "graduation_year",
+        ]
         plot_feature_correlations(raw, numeric_cols)
         plot_roc_curves(all_models, X_test_fe, y_test)
         plot_confusion_matrix(all_models[best_name], X_test_fe, y_test, name=best_name)
@@ -126,9 +135,13 @@ def main():
             sample = X_test_fe[: min(300, X_test_fe.shape[0])]
             shap_vals = explainer.shap_values(sample)
             plt.figure(figsize=(10, 6))
-            shap.summary_plot(shap_vals, sample, feature_names=feature_names, show=False)
+            shap.summary_plot(
+                shap_vals, sample, feature_names=feature_names, show=False
+            )
             plt.tight_layout()
-            plt.savefig("reports/figures/shap_summary.png", dpi=150, bbox_inches="tight")
+            plt.savefig(
+                "reports/figures/shap_summary.png", dpi=150, bbox_inches="tight"
+            )
             plt.close()
             print("✅ SHAP plot saved to reports/figures/shap_summary.png")
         except Exception as e:
