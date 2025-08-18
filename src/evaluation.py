@@ -1,5 +1,7 @@
 import os
+import json
 import pandas as pd
+import mlflow
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -8,6 +10,7 @@ from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix,
 )
+from pathlib import Path
 
 
 def eval_models(models: dict, X_test, y_test):
@@ -42,25 +45,53 @@ def confusion(m, X, y):
 
 def evaluate_models(models_dict, X_test, y_test):
     """
-    Returns a DataFrame of metrics for each model.
+    Returns a DataFrame of metrics for each model with MLflow logging.
     """
+    # Set MLflow tracking URI to local directory for testing
+    mlflow.set_tracking_uri("file:./mlruns")
+
     rows = []
     for name, mdl in models_dict.items():
-        y_pred = mdl.predict(X_test)
-        proba = (
-            mdl.predict_proba(X_test)[:, 1] if hasattr(mdl, "predict_proba") else None
-        )
+        with mlflow.start_run(run_name=f"evaluate_{name}"):
+            y_pred = mdl.predict(X_test)
+            proba = (
+                mdl.predict_proba(X_test)[:, 1]
+                if hasattr(mdl, "predict_proba")
+                else None
+            )
 
-        rows.append(
-            {
-                "model": name,
-                "accuracy": accuracy_score(y_test, y_pred),
-                "precision": precision_score(y_test, y_pred, zero_division=0),
-                "recall": recall_score(y_test, y_pred, zero_division=0),
-                "f1_score": f1_score(y_test, y_pred, zero_division=0),
-                "roc_auc": roc_auc_score(y_test, proba) if proba is not None else None,
-            }
-        )
+            # Calculate metrics
+            accuracy = accuracy_score(y_test, y_pred)
+            f1 = f1_score(y_test, y_pred, zero_division=0)
+            roc_auc = roc_auc_score(y_test, proba) if proba is not None else None
+
+            # Log exactly 2 evaluation metrics for classification
+            mlflow.log_metric("accuracy", accuracy)
+            mlflow.log_metric("f1_score", f1)
+
+            rows.append(
+                {
+                    "model": name,
+                    "accuracy": accuracy,
+                    "precision": precision_score(y_test, y_pred, zero_division=0),
+                    "recall": recall_score(y_test, y_pred, zero_division=0),
+                    "f1_score": f1,
+                    "roc_auc": roc_auc,
+                }
+            )
+
+    # Save evaluation results to reports/evaluation_results.json
+    reports_dir = Path("reports")
+    reports_dir.mkdir(exist_ok=True)
+
+    evaluation_results = {
+        "evaluation_timestamp": pd.Timestamp.now().isoformat(),
+        "models_evaluated": len(rows),
+        "results": rows,
+    }
+
+    with open(reports_dir / "evaluation_results.json", "w") as f:
+        json.dump(evaluation_results, f, indent=2, default=str)
 
     return pd.DataFrame(rows).set_index("model")
 

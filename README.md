@@ -3,9 +3,11 @@
 
 ---
 
-## 🏫 Homework 1: Core ML Pipeline
+## 🏫 Homework 3: MLflow Integration and Model Drift Detection
 
 ### Project Overview
+
+Building on the core ML pipeline from Homework 1 and the containerized deployment from Homework 2, this iteration introduces MLflow for experiment tracking and model registry management, along with Evidently AI for comprehensive data drift detection. The enhanced pipeline now provides production-ready monitoring capabilities that automatically detect when models require retraining due to data distribution changes.
 
 As someone who once had the challenges of studying abroad myself, I know firsthand how difficult it can be to secure an internship or job after graduation. International students often face visa restrictions, language barriers, and have limited local networks that can leave even the most qualified candidates at a disadvantage.
 

@@ -2,6 +2,21 @@ import os
 import joblib
 import warnings
 from pathlib import Path
+import mlflow
+import mlflow.pyfunc
+import pandas as pd
+import numpy as np
+
+# Suppress joblib CPU core detection warnings on Windows
+warnings.filterwarnings(
+    "ignore", message=".*Could not find the number of physical cores.*"
+)
+warnings.filterwarnings(
+    "ignore", message=".*The system cannot find the file specified.*"
+)
+
+# Set joblib to use logical cores instead of trying to detect physical cores
+os.environ["LOKY_MAX_CPU_COUNT"] = str(os.cpu_count())
 
 from sklearn.ensemble import (
     RandomForestClassifier,
@@ -31,7 +46,46 @@ warnings.filterwarnings("ignore", category=FutureWarning)
 warnings.filterwarnings("ignore", category=ConvergenceWarning)
 
 
+class CustomMLModel(mlflow.pyfunc.PythonModel):
+    """
+    Custom MLflow PyFunc model wrapper for your trained model.
+    Encapsulates preprocessing and prediction logic.
+    """
+
+    def __init__(self):
+        self.model = None
+        self.preprocessor = None  # scaler, encoder, etc.
+        self.feature_names = None
+
+    def load_context(self, context):
+        """Load model artifacts from MLflow context."""
+        self.model = joblib.load(context.artifacts["model"])
+        # Load preprocessor if exists
+        if "preprocessor" in context.artifacts:
+            self.preprocessor = joblib.load(context.artifacts["preprocessor"])
+        # Load feature names
+        if "feature_names" in context.artifacts:
+            with open(context.artifacts["feature_names"], "r") as f:
+                self.feature_names = [line.strip() for line in f.readlines()]
+
+    def predict(self, context, model_input: pd.DataFrame) -> np.ndarray:
+        """Make predictions using the trained model."""
+        # Apply preprocessing if available
+        if self.preprocessor:
+            processed_input = self.preprocessor.transform(model_input)
+        else:
+            processed_input = model_input.values
+
+        # Make predictions
+        predictions = self.model.predict(processed_input)
+        return predictions
+
+
 def train_base_models(X_train, y_train, models_dir: str = "models"):
+    """Train base models with MLflow tracking."""
+    # Set MLflow tracking URI to local directory for testing
+    mlflow.set_tracking_uri("file:./mlruns")
+
     os.makedirs(models_dir, exist_ok=True)
     models = {
         "randomforest": RandomForestClassifier(random_state=42),
@@ -43,11 +97,66 @@ def train_base_models(X_train, y_train, models_dir: str = "models"):
         "knn": KNeighborsClassifier(),
     }
     saved = {}
+
     for name, clf in models.items():
-        clf.fit(X_train, y_train)
-        path = os.path.join(models_dir, f"model_{name}.pkl")
-        joblib.dump(clf, path)
-        saved[name] = path
+        with mlflow.start_run(run_name=f"train_{name}"):
+            # Log exactly 3 hyperparameters for classification
+            if name == "randomforest":
+                mlflow.log_param("n_estimators", clf.n_estimators)
+                mlflow.log_param("max_depth", clf.max_depth)
+                mlflow.log_param("random_state", clf.random_state)
+            elif name == "logisticregression":
+                mlflow.log_param("solver", clf.solver)
+                mlflow.log_param("max_iter", clf.max_iter)
+                mlflow.log_param("random_state", clf.random_state)
+            elif name == "gradientboosting":
+                mlflow.log_param("n_estimators", clf.n_estimators)
+                mlflow.log_param("max_depth", clf.max_depth)
+                mlflow.log_param("random_state", clf.random_state)
+            elif name == "svm":
+                mlflow.log_param("C", clf.C)
+                mlflow.log_param("kernel", clf.kernel)
+                mlflow.log_param("random_state", clf.random_state)
+            elif name == "knn":
+                mlflow.log_param("n_neighbors", clf.n_neighbors)
+                mlflow.log_param("weights", clf.weights)
+                mlflow.log_param("algorithm", clf.algorithm)
+
+            # Train model
+            clf.fit(X_train, y_train)
+
+            # Save model locally
+            path = os.path.join(models_dir, f"model_{name}.pkl")
+            joblib.dump(clf, path)
+            saved[name] = path
+
+            # Log model using custom PyFunc wrapper
+            artifacts = {
+                "model": path,
+            }
+
+            # Save feature names for the custom model
+            feature_names_path = os.path.join(models_dir, f"feature_names_{name}.txt")
+            with open(feature_names_path, "w") as f:
+                for feature in X_train.columns:
+                    f.write(f"{feature}\n")
+            artifacts["feature_names"] = feature_names_path
+
+            # Log custom model to MLflow
+            mlflow.pyfunc.log_model(
+                artifact_path="model",
+                python_model=CustomMLModel(),
+                artifacts=artifacts,
+                pip_requirements=["scikit-learn", "pandas", "numpy", "joblib"],
+            )
+
+            # Save artifacts to mlflow/artifacts/
+            mlflow_artifacts_dir = "mlflow/artifacts"
+            os.makedirs(mlflow_artifacts_dir, exist_ok=True)
+            mlflow_model_path = os.path.join(mlflow_artifacts_dir, f"model_{name}.pkl")
+            joblib.dump(clf, mlflow_model_path)
+
+    return saved
     return saved
 
 

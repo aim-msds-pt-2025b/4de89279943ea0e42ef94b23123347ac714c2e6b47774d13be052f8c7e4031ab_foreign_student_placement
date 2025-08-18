@@ -1,6 +1,7 @@
 import os
 import json
 import pandas as pd
+import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 
@@ -75,30 +76,72 @@ def preprocess_data(
     X_train[num_cols] = scaler.transform(X_train[num_cols])
     X_test[num_cols] = scaler.transform(X_test[num_cols])
 
-    if emit_drifted and create_synthetic_drift_data is not None:
-        # Construct current data by adding synthetic drift to test split (for demo)
-        current = pd.concat([X_test.copy(), y_test.rename("placement_status")], axis=1)
-        drifted = create_synthetic_drift_data(
-            current,
-            drift_magnitude=drift_magnitude,
-            drift_features=[
-                "gpa_or_score",
-                "test_score",
-                "year_of_enrollment",
-                "graduation_year",
-            ],
+    # 7) Generate drifted data as per homework requirements
+    if emit_drifted:
+        # Generate drifted training data
+        X_train_drifted = X_train.copy()
+        y_train_drifted = y_train.copy()
+
+        # Apply drift to numerical features: multiply by 1.2 or add Gaussian noise
+        for col in num_cols:
+            # Stronger deterministic drift: scale and add small noise
+            feature_std = X_train[col].std()
+            noise = np.random.normal(0, 0.05 * feature_std, len(X_train_drifted))
+            X_train_drifted[col] = X_train_drifted[col] * 1.3 + noise
+
+        # Apply drift to categorical features: randomly flip 10-15% of values
+        cat_cols = [col for col in X_train.columns if col not in num_cols]
+        for col in cat_cols:
+            unique_values = X_train[col].unique()
+            if len(unique_values) > 1:  # Only if there are multiple categories
+                flip_mask = (
+                    np.random.random(len(X_train_drifted)) < 0.3
+                )  # 30% flip rate
+                for idx in X_train_drifted[flip_mask].index:
+                    current_val = X_train_drifted.loc[idx, col]
+                    other_vals = [v for v in unique_values if v != current_val]
+                    if other_vals:
+                        X_train_drifted.loc[idx, col] = np.random.choice(other_vals)
+
+        # Generate drifted test data (same logic)
+        X_test_drifted = X_test.copy()
+        y_test_drifted = y_test.copy()
+
+        # Apply drift to numerical features
+        for col in num_cols:
+            feature_std = X_train[col].std()  # Use training std for consistency
+            noise = np.random.normal(0, 0.05 * feature_std, len(X_test_drifted))
+            X_test_drifted[col] = X_test_drifted[col] * 1.3 + noise
+
+        # Apply drift to categorical features
+        for col in cat_cols:
+            unique_values = X_train[col].unique()
+            if len(unique_values) > 1:
+                flip_mask = np.random.random(len(X_test_drifted)) < 0.3
+                for idx in X_test_drifted[flip_mask].index:
+                    current_val = X_test_drifted.loc[idx, col]
+                    other_vals = [v for v in unique_values if v != current_val]
+                    if other_vals:
+                        X_test_drifted.loc[idx, col] = np.random.choice(other_vals)
+
+        # Save drifted datasets as required
+        os.makedirs("data", exist_ok=True)
+        drifted_train = pd.concat([X_train_drifted, y_train_drifted], axis=1)
+        drifted_test = pd.concat([X_test_drifted, y_test_drifted], axis=1)
+
+        drifted_train.to_csv("data/drifted_train.csv", index=False)
+        drifted_test.to_csv("data/drifted_test.csv", index=False)
+
+        # Return tuple as specified in homework
+        return (
+            X_train,
+            X_test,
+            y_train,
+            y_test,
+            X_train_drifted,
+            y_train_drifted,
+            X_test_drifted,
+            y_test_drifted,
         )
-        os.makedirs(reports_dir, exist_ok=True)
-        drift_meta = {
-            "generated": True,
-            "drift_magnitude": drift_magnitude,
-            "rows": len(drifted),
-        }
-        with open(os.path.join(reports_dir, "drift_meta.json"), "w") as f:
-            json.dump(drift_meta, f, indent=2)
-        # return both original and drifted current datasets for downstream use
-        X_drift = drifted.drop(columns=["placement_status"])  # type: ignore
-        y_drift = drifted["placement_status"]  # type: ignore
-        return X_train, X_test, y_train, y_test, X_drift, y_drift
 
     return X_train, X_test, y_train, y_test
