@@ -4,16 +4,16 @@ import mlflow
 from pathlib import Path
 import json
 from pandas.api.types import is_numeric_dtype, is_bool_dtype
+import sys
+import warnings
+import contextlib
 
 # Add src directory to Python path for imports
-import sys
 src_dir = os.path.dirname(os.path.abspath(__file__))
 if src_dir not in sys.path:
     sys.path.insert(0, src_dir)
 
 # Comprehensive joblib warning suppression for Windows
-import warnings
-
 warnings.filterwarnings(
     "ignore", message=".*Could not find the number of physical cores.*"
 )
@@ -27,8 +27,6 @@ os.environ["LOKY_MAX_CPU_COUNT"] = str(os.cpu_count())
 os.environ["JOBLIB_MULTIPROCESSING"] = "0"  # Disable multiprocessing to avoid warnings
 
 # Redirect stderr temporarily to suppress low-level Windows errors
-import io
-import contextlib
 
 
 @contextlib.contextmanager
@@ -93,9 +91,6 @@ SHAP_AVAILABLE = False
 try:
     # Only import shap if needed, avoiding lint errors
     if False:  # Disabled for now
-        import shap
-        import matplotlib.pyplot as plt
-
         SHAP_AVAILABLE = True
 except Exception:
     pass
@@ -103,7 +98,8 @@ except Exception:
 
 # Set MLflow tracking URI to Docker service for UI visibility
 # This must be done before any MLflow operations in imported modules
-mlflow.set_tracking_uri("http://localhost:5000")
+tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "http://localhost:5000")
+mlflow.set_tracking_uri(tracking_uri)
 
 
 def main():

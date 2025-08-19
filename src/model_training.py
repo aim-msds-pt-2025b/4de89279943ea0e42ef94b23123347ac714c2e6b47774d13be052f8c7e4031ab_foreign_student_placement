@@ -6,18 +6,6 @@ import mlflow
 import mlflow.pyfunc
 import pandas as pd
 import numpy as np
-
-# Suppress joblib CPU core detection warnings on Windows
-warnings.filterwarnings(
-    "ignore", message=".*Could not find the number of physical cores.*"
-)
-warnings.filterwarnings(
-    "ignore", message=".*The system cannot find the file specified.*"
-)
-
-# Set joblib to use logical cores instead of trying to detect physical cores
-os.environ["LOKY_MAX_CPU_COUNT"] = str(os.cpu_count())
-
 from sklearn.ensemble import (
     RandomForestClassifier,
     GradientBoostingClassifier,
@@ -33,6 +21,17 @@ from sklearn.model_selection import (
 )
 from sklearn.dummy import DummyClassifier
 from sklearn.exceptions import ConvergenceWarning
+
+# Suppress joblib CPU core detection warnings on Windows
+warnings.filterwarnings(
+    "ignore", message=".*Could not find the number of physical cores.*"
+)
+warnings.filterwarnings(
+    "ignore", message=".*The system cannot find the file specified.*"
+)
+
+# Set joblib to use logical cores instead of trying to detect physical cores
+os.environ["LOKY_MAX_CPU_COUNT"] = str(os.cpu_count())
 
 # Optional MLflow import
 try:
@@ -83,8 +82,9 @@ class CustomMLModel(mlflow.pyfunc.PythonModel):
 
 def train_base_models(X_train, y_train, models_dir: str = "models"):
     """Train base models with MLflow tracking."""
-    # Set MLflow tracking URI to local directory for testing
-    mlflow.set_tracking_uri("file:./mlruns")
+    # Use environment MLflow tracking URI if available, otherwise local
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "file:./mlruns")
+    mlflow.set_tracking_uri(tracking_uri)
 
     os.makedirs(models_dir, exist_ok=True)
     models = {
@@ -130,33 +130,15 @@ def train_base_models(X_train, y_train, models_dir: str = "models"):
             joblib.dump(clf, path)
             saved[name] = path
 
-            # Log model using custom PyFunc wrapper
-            artifacts = {
-                "model": path,
-            }
+            # Log basic model information to MLflow without artifacts for now
+            # to avoid permission issues in Docker environment
+            mlflow.log_param("model_type", name)
+            mlflow.log_param("model_path", path)
 
-            # Save feature names for the custom model
-            feature_names_path = os.path.join(models_dir, f"feature_names_{name}.txt")
-            with open(feature_names_path, "w") as f:
-                for feature in X_train.columns:
-                    f.write(f"{feature}\n")
-            artifacts["feature_names"] = feature_names_path
+            # Log a simple metric (training accuracy) to demonstrate tracking
+            train_accuracy = clf.score(X_train, y_train)
+            mlflow.log_metric("train_accuracy", train_accuracy)
 
-            # Log custom model to MLflow
-            mlflow.pyfunc.log_model(
-                artifact_path="model",
-                python_model=CustomMLModel(),
-                artifacts=artifacts,
-                pip_requirements=["scikit-learn", "pandas", "numpy", "joblib"],
-            )
-
-            # Save artifacts to mlflow/artifacts/
-            mlflow_artifacts_dir = "mlflow/artifacts"
-            os.makedirs(mlflow_artifacts_dir, exist_ok=True)
-            mlflow_model_path = os.path.join(mlflow_artifacts_dir, f"model_{name}.pkl")
-            joblib.dump(clf, mlflow_model_path)
-
-    return saved
     return saved
 
 

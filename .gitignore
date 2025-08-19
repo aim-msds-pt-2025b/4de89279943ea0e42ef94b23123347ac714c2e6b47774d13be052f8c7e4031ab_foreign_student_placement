@@ -31,7 +31,6 @@ uv.lock
 .ipynb_checkpoints/
 
 # Data, models, reports
-/data/
 /models/
 /reports/
 

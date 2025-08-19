@@ -47,8 +47,9 @@ def evaluate_models(models_dict, X_test, y_test):
     """
     Returns a DataFrame of metrics for each model with MLflow logging.
     """
-    # Set MLflow tracking URI to local directory for testing
-    mlflow.set_tracking_uri("file:./mlruns")
+    # Use environment MLflow tracking URI if available, otherwise local
+    tracking_uri = os.environ.get("MLFLOW_TRACKING_URI", "file:./mlruns")
+    mlflow.set_tracking_uri(tracking_uri)
 
     rows = []
     for name, mdl in models_dict.items():

@@ -1,28 +1,23 @@
-FROM apache/airflow:2.9.3
-
-# 1) Become root to install system dependencies
-USER root
+FROM apache/airflow:3.0.3
 WORKDIR /opt/airflow
 
-# 2) Copy project metadata first (better cache)
-COPY pyproject.toml README.md ./
+# Install system dependencies for building Python packages
+USER root
+RUN apt-get update && apt-get install -y \
+  gcc \
+  python3-dev \
+  libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
 
-# 3) Install heavy runtime deps in a separate cached layer
-RUN python -m pip install --upgrade pip \
-  && python -m pip install --no-cache-dir \
-    pandas>=2.1 \
-    scikit-learn>=1.2,<2.0 \
-    joblib>=1.2,<2.0 \
-    seaborn>=0.12.0 \
-    matplotlib>=3.7.0 \
-    mlflow==3.1.4 \
-    evidently==0.7.11 \
-    psycopg2-binary==2.9.10 \
-    shap>=0.48.0
-
-# 4) Copy source last; install package without pulling deps again
-COPY src/ ./src
-RUN python -m pip install --no-cache-dir --no-deps .
-
-# 5) Drop back to the airflow user
+# Switch back to airflow user
 USER airflow
+
+# Copy project files
+COPY pyproject.toml requirements.txt README.md ./
+
+# Install dependencies using pip directly from requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt \
+  && rm -rf ~/.cache
+
+# Bring in your code and DAGs later to avoid busting the deps cache
+COPY src/ ./src
