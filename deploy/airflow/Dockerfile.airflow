@@ -1,17 +1,23 @@
-FROM apache/airflow:2.9.3
-
-# 1) Become root to install our project
-USER root
+FROM apache/airflow:3.0.3
 WORKDIR /opt/airflow
 
-# 2) Copy in your TOML + source
-COPY pyproject.toml uv.lock README.md ./
-COPY src/ ./src
+# Install system dependencies for building Python packages
+USER root
+RUN apt-get update && apt-get install -y \
+  gcc \
+  python3-dev \
+  libpq-dev \
+  && rm -rf /var/lib/apt/lists/*
 
-# 3) Install your package (and its [project] deps) via PEP-517
-# hadolint ignore=DL3013,DL3042
-RUN python -m pip install --upgrade pip \
-  && python -m pip install --no-cache-dir .
-
-# 4) Drop back to the airflow user
+# Switch back to airflow user
 USER airflow
+
+# Copy project files
+COPY pyproject.toml requirements.txt README.md ./
+
+# Install dependencies using pip directly from requirements.txt
+RUN python -m pip install --no-cache-dir -r requirements.txt \
+  && rm -rf ~/.cache
+
+# Bring in your code and DAGs later to avoid busting the deps cache
+COPY src/ ./src

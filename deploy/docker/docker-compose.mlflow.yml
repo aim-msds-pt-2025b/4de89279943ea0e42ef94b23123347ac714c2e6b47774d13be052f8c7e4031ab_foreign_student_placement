@@ -1,0 +1,35 @@
+version: '3.9'
+services:
+  postgres:
+    image: postgres:15.8-alpine
+    environment:
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_USER: mlflow
+      POSTGRES_DB: mlflow
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mlflow"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    volumes:
+      - mlflow-db:/var/lib/postgresql/data
+
+  mlflow:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.mlflow
+    environment:
+      BACKEND_STORE_URI: postgresql+psycopg2://mlflow:mlflow@postgres:5432/mlflow
+      ARTIFACT_ROOT: file:/mlruns
+      MLFLOW_TRACKING_URI: http://0.0.0.0:5000
+    depends_on:
+      postgres:
+        condition: service_healthy
+    ports:
+      - "5000:5000"
+    volumes:
+      - mlflow-artifacts:/mlruns
+
+volumes:
+  mlflow-db:
+  mlflow-artifacts:

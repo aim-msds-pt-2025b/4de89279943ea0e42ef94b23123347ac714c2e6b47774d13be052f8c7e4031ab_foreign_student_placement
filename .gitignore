@@ -31,9 +31,13 @@ uv.lock
 .ipynb_checkpoints/
 
 # Data, models, reports
-/data/
 /models/
 /reports/
+
+# MLflow
+mlruns/
+mlartifacts/
+.mlflow/
 
 # Airflow logs (both host-mounted and container-generated)
 /logs/

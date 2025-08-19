@@ -2,13 +2,15 @@
 
 import sys
 import os
-import pandas as pd
-import numpy as np
 
 # 1) make sure pytest can see your src/ folder
 HERE = os.path.dirname(__file__)
 SRC = os.path.abspath(os.path.join(HERE, "..", "src"))
 sys.path.insert(0, SRC)
+
+# ruff: noqa: E402
+import pandas as pd
+import numpy as np
 
 from data_preprocessing import preprocess_data
 from feature_engineering import engineer_features

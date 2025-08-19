@@ -1,0 +1,43 @@
+services:
+  postgres:
+    image: postgres:15.8-alpine
+    environment:
+      POSTGRES_USER: mlflow
+      POSTGRES_PASSWORD: mlflow
+      POSTGRES_DB: mlflow
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-db-volume:/var/lib/postgresql/data
+    healthcheck:
+      test: [ "CMD", "pg_isready", "-U", "mlflow" ]
+      interval: 10s
+      retries: 3
+      start_period: 5s
+    restart: always
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: Dockerfile.mlflow
+    ports:
+      - "5000:5000"
+    environment:
+      MLFLOW_BACKEND_STORE_URI: postgresql://mlflow:mlflow@postgres:5432/mlflow
+      MLFLOW_DEFAULT_ARTIFACT_ROOT: /mlflow/artifacts
+    volumes:
+      - mlflow-artifacts:/mlflow/artifacts
+      - ./mlflow:/mlflow
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: always
+
+  airflow-webserver:
+    # Update to latest version as specified in homework
+    image: apache/airflow:3.0.3
+    # ... your existing airflow config ...
+
+volumes:
+  mlflow-artifacts:
+  postgres-db-volume:
